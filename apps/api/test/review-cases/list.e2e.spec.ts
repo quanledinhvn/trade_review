@@ -1,7 +1,7 @@
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { RISK_LEVEL } from '../../src/domain/severity';
-import { ESCALATION_STATUS } from '../../src/domain/types';
+import { ESCALATION_STATUS } from '../../src/domain/escalation';
 import { PrismaService } from '../../src/database/prisma.service';
 import type { ReviewCasesResponseDto } from '../../src/modules/review-cases/dto/review-cases-response.dto';
 import { seedInReviewCase, validCreatePayload, withActorHeaders } from '../utils';
@@ -184,9 +184,7 @@ describe('GET /api/review-cases (e2e)', () => {
 
 		expect(response.status).toBe(HttpStatus.OK);
 
-		const refs = (response.body as ReviewCasesResponseDto).items.map(
-			(item) => item.case_reference,
-		);
+		const refs = (response.body as ReviewCasesResponseDto).items.map((item) => item.case_reference);
 
 		expect(refs).toContain('REV-LIST-ALL-OPEN');
 

@@ -60,12 +60,7 @@ function getReassignDialogKey(context: ReassignContext): string {
 	return `task-${context.caseRef}-${context.taskId}`;
 }
 
-export function ReassignDialog({
-	open,
-	onOpenChange,
-	context,
-	onReassigned,
-}: ReassignDialogProps) {
+export function ReassignDialog({ open, onOpenChange, context, onReassigned }: ReassignDialogProps) {
 	const [form, setForm] = useState<ReassignFormValues>({ assignedTeam: '', assignedUser: '' });
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);

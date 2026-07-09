@@ -12,7 +12,9 @@ import type { RuleDefinition } from './rules-config';
 import type { ReviewCaseLike } from './rule-engine';
 import { RISK_LEVEL, SEVERITY_RANK } from './severity';
 import { TASK_STATUS } from './task-status';
-import { DOCUMENT_TYPE, ESCALATION_STATUS, PACKAGING_TYPE } from './types';
+import { DOCUMENT_TYPE } from './document-type';
+import { ESCALATION_STATUS } from './escalation';
+import { PACKAGING_TYPE } from './packaging';
 
 const NOW = new Date('2026-07-09T00:00:00.000Z');
 
@@ -40,7 +42,10 @@ describe('missingDocuments', () => {
 	it('returns required documents minus completed documents', () => {
 		const c = makeCase();
 
-		expect(missingDocuments(c)).toEqual([DOCUMENT_TYPE.PACKING_LIST, DOCUMENT_TYPE.TRANSPORT_DOCUMENT]);
+		expect(missingDocuments(c)).toEqual([
+			DOCUMENT_TYPE.PACKING_LIST,
+			DOCUMENT_TYPE.TRANSPORT_DOCUMENT,
+		]);
 	});
 
 	it('returns empty array when all documents are completed', () => {
@@ -57,8 +62,13 @@ describe('predicates', () => {
 	it('missing_document matches when documentType is missing', () => {
 		const c = makeCase();
 
-		expect(missingDocumentPredicate(c, { documentType: DOCUMENT_TYPE.TRANSPORT_DOCUMENT })).toBe(true);
-		expect(missingDocumentPredicate(c, { documentType: DOCUMENT_TYPE.COMMERCIAL_INVOICE })).toBe(false);
+		expect(missingDocumentPredicate(c, { documentType: DOCUMENT_TYPE.TRANSPORT_DOCUMENT })).toBe(
+			true,
+		);
+
+		expect(missingDocumentPredicate(c, { documentType: DOCUMENT_TYPE.COMMERCIAL_INVOICE })).toBe(
+			false,
+		);
 	});
 
 	it('wood_uncertified matches for solid-wood packaging without certification', () => {
@@ -74,7 +84,10 @@ describe('predicates', () => {
 	});
 
 	it('wood_uncertified does not match reconstituted_wood_box (processed wood, ISPM-15 exempt)', () => {
-		const c = makeCase({ packagingType: PACKAGING_TYPE.RECONSTITUTED_WOOD_BOX, ispm15Certified: false });
+		const c = makeCase({
+			packagingType: PACKAGING_TYPE.RECONSTITUTED_WOOD_BOX,
+			ispm15Certified: false,
+		});
 
 		expect(woodUncertifiedPredicate(c, {})).toBe(false);
 	});
@@ -83,6 +96,7 @@ describe('predicates', () => {
 		const c = makeCase({ invoiceValue: 125000 });
 
 		expect(highValuePredicate(c, { threshold: 100000 })).toBe(true);
+
 		expect(highValuePredicate(c, { threshold: 200000 })).toBe(false);
 	});
 
@@ -136,7 +150,10 @@ describe('evaluate', () => {
 			version: 1,
 			enabled: true,
 			reason: 'commercial_invoice is required but not completed',
-			when: { trigger: 'missing_document', params: { documentType: DOCUMENT_TYPE.COMMERCIAL_INVOICE } },
+			when: {
+				trigger: 'missing_document',
+				params: { documentType: DOCUMENT_TYPE.COMMERCIAL_INVOICE },
+			},
 			task: {
 				severity: RISK_LEVEL.CRITICAL,
 				title: 'Missing commercial invoice',
@@ -150,7 +167,10 @@ describe('evaluate', () => {
 			version: 1,
 			enabled: true,
 			reason: 'transport_document is required but not completed',
-			when: { trigger: 'missing_document', params: { documentType: DOCUMENT_TYPE.TRANSPORT_DOCUMENT } },
+			when: {
+				trigger: 'missing_document',
+				params: { documentType: DOCUMENT_TYPE.TRANSPORT_DOCUMENT },
+			},
 			task: {
 				severity: RISK_LEVEL.CRITICAL,
 				title: 'Missing transport document',
@@ -164,7 +184,10 @@ describe('evaluate', () => {
 			version: 1,
 			enabled: false,
 			reason: 'disabled rule should never fire',
-			when: { trigger: 'missing_document', params: { documentType: DOCUMENT_TYPE.TRANSPORT_DOCUMENT } },
+			when: {
+				trigger: 'missing_document',
+				params: { documentType: DOCUMENT_TYPE.TRANSPORT_DOCUMENT },
+			},
 			task: {
 				severity: RISK_LEVEL.LOW,
 				title: 'disabled',
@@ -182,6 +205,7 @@ describe('evaluate', () => {
 		const results = evaluate(c, rules, now);
 
 		expect(results.map((r) => r.ruleId)).toEqual(['R-DOC-TRANSPORT']);
+
 		expect(results[0]).toMatchObject({
 			ruleId: 'R-DOC-TRANSPORT',
 			reason: 'transport_document is required but not completed',
@@ -219,7 +243,9 @@ describe('computeRiskRollup', () => {
 	});
 
 	it('falls back to low when no active tasks or escalations', () => {
-		const rollup = computeRiskRollup([{ severity: RISK_LEVEL.CRITICAL, status: TASK_STATUS.COMPLETED }]);
+		const rollup = computeRiskRollup([
+			{ severity: RISK_LEVEL.CRITICAL, status: TASK_STATUS.COMPLETED },
+		]);
 
 		expect(rollup).toEqual({ riskLevel: RISK_LEVEL.LOW, riskRank: SEVERITY_RANK.low });
 	});

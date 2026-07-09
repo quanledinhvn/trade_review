@@ -4,12 +4,9 @@ import { AUDIT_ACTION } from '../../src/domain/audit';
 import { CASE_STATUS } from '../../src/domain/case-status';
 import { RISK_LEVEL } from '../../src/domain/severity';
 import { TASK_STATUS } from '../../src/domain/task-status';
-import {
-	DOCUMENT_TYPE,
-	ESCALATION_STATUS,
-	ESCALATION_TYPE,
-	PACKAGING_TYPE,
-} from '../../src/domain/types';
+import { DOCUMENT_TYPE } from '../../src/domain/document-type';
+import { ESCALATION_STATUS, ESCALATION_TYPE } from '../../src/domain/escalation';
+import { PACKAGING_TYPE } from '../../src/domain/packaging';
 import type { ErrorDto } from '../../src/common/exceptions/exception';
 import { PrismaService } from '../../src/database/prisma.service';
 import type { RunRulesResponseDto } from '../../src/modules/review-cases/dto/run-rules-response.dto';
@@ -35,7 +32,9 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 			{ deadlineHoursFromNow: 36 },
 		);
 
-		const response = await withActorHeaders(request(server).post(`/api/review-cases/${created.id}/run-rules`));
+		const response = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
 		const body = response.body as RunRulesResponseDto;
 
 		expect(response.status).toBe(HttpStatus.OK);
@@ -102,7 +101,9 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 
 		await withActorHeaders(request(server).post(`/api/review-cases/${created.id}/run-rules`));
 
-		const second = await withActorHeaders(request(server).post(`/api/review-cases/${created.id}/run-rules`));
+		const second = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
 		const body = second.body as RunRulesResponseDto;
 
 		expect(second.status).toBe(HttpStatus.OK);
@@ -152,7 +153,9 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 			invoice_value: 500,
 		});
 
-		const response = await withActorHeaders(request(server).post(`/api/review-cases/${created.id}/run-rules`));
+		const response = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
 		const body = response.body as RunRulesResponseDto;
 
 		expect(response.status).toBe(HttpStatus.OK);
@@ -176,7 +179,9 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 			review_window_days: 14,
 		});
 
-		const response = await withActorHeaders(request(server).post(`/api/review-cases/${created.id}/run-rules`));
+		const response = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
 		const body = response.body as RunRulesResponseDto;
 
 		expect(response.status).toBe(HttpStatus.OK);
@@ -194,9 +199,7 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 
 	it('returns 404 when the case does not exist', async () => {
 		const response = await withActorHeaders(
-			request(server).post(
-				'/api/review-cases/01940000-0000-7000-8000-000000000001/run-rules',
-			),
+			request(server).post('/api/review-cases/01940000-0000-7000-8000-000000000001/run-rules'),
 		);
 		const body = response.body as ErrorDto;
 
@@ -212,7 +215,9 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 			{ status: CASE_STATUS.COMPLETED },
 		);
 
-		const response = await withActorHeaders(request(server).post(`/api/review-cases/${created.id}/run-rules`));
+		const response = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
 		const body = response.body as ErrorDto;
 
 		expect(response.status).toBe(HttpStatus.CONFLICT);

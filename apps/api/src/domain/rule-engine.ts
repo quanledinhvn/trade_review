@@ -2,7 +2,9 @@ import { timeRemainingHours } from './deadline';
 import { isWoodPackaging } from './packaging';
 import { RISK_LEVEL, SEVERITY_RANK, type RiskLevel, type Severity } from './severity';
 import { TASK_STATUS } from './task-status';
-import { ESCALATION_STATUS, type DocumentType, type PackagingType } from './types';
+import type { DocumentType } from './document-type';
+import { ESCALATION_STATUS } from './escalation';
+import type { PackagingType } from './packaging';
 import type { RuleDefinition, RuleEscalationOutcome, RuleTaskOutcome } from './rules-config';
 
 export interface ReviewCaseLike {
@@ -87,7 +89,7 @@ export function evaluate(
 				task: rule.task,
 				escalation: rule.escalation,
 				rule,
-				...(documentType !== undefined ? { documentType } : {}),
+				documentType,
 			});
 		}
 	}

@@ -2,7 +2,7 @@ import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { CASE_STATUS } from '../../src/domain/case-status';
 import { RISK_LEVEL } from '../../src/domain/severity';
-import { ESCALATION_STATUS, RESOLVED_REASON } from '../../src/domain/types';
+import { ESCALATION_STATUS, RESOLVED_REASON } from '../../src/domain/escalation';
 import { PrismaService } from '../../src/database/prisma.service';
 import { canonicalCasePayload, cleanCasePayload, createCase, seedInReviewCase } from '../utils';
 

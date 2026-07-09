@@ -2,11 +2,7 @@ import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AUDIT_ACTION } from '../../src/domain/audit';
 import { RISK_LEVEL } from '../../src/domain/severity';
-import {
-	ESCALATION_STATUS,
-	ESCALATION_TYPE,
-	RESOLVED_REASON,
-} from '../../src/domain/types';
+import { ESCALATION_STATUS, ESCALATION_TYPE, RESOLVED_REASON } from '../../src/domain/escalation';
 import { PrismaService } from '../../src/database/prisma.service';
 import type { ReviewCaseResponseDto } from '../../src/modules/review-cases/dto/review-case-response.dto';
 import type { RunRulesResponseDto } from '../../src/modules/review-cases/dto/run-rules-response.dto';
@@ -32,7 +28,9 @@ describe('Escalations (e2e)', () => {
 			{ deadlineHoursFromNow: 36 },
 		);
 
-		const response = await withActorHeaders(request(server).post(`/api/review-cases/${created.id}/run-rules`));
+		const response = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
 		const body = response.body as RunRulesResponseDto;
 
 		expect(response.status).toBe(HttpStatus.OK);
@@ -60,7 +58,9 @@ describe('Escalations (e2e)', () => {
 			{ deadlineHoursFromNow: -5 },
 		);
 
-		const response = await withActorHeaders(request(server).post(`/api/review-cases/${created.id}/run-rules`));
+		const response = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
 		const body = response.body as RunRulesResponseDto;
 
 		expect(response.status).toBe(HttpStatus.OK);
@@ -88,7 +88,9 @@ describe('Escalations (e2e)', () => {
 			{ deadlineHoursFromNow: 36 },
 		);
 
-		const first = await withActorHeaders(request(server).post(`/api/review-cases/${created.id}/run-rules`));
+		const first = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
 
 		expect((first.body as RunRulesResponseDto).risk_level).toBe(RISK_LEVEL.HIGH);
 
@@ -97,7 +99,9 @@ describe('Escalations (e2e)', () => {
 			data: { deadline: new Date(Date.now() - 5 * 60 * 60 * 1000) },
 		});
 
-		const second = await withActorHeaders(request(server).post(`/api/review-cases/${created.id}/run-rules`));
+		const second = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
 
 		expect(second.status).toBe(HttpStatus.OK);
 
@@ -134,11 +138,13 @@ describe('Escalations (e2e)', () => {
 
 		expect(escalationAudits).toHaveLength(3);
 
-		expect(escalationAudits.filter((audit) => audit.action === AUDIT_ACTION.ESCALATION_CREATED)).toHaveLength(2);
+		expect(
+			escalationAudits.filter((audit) => audit.action === AUDIT_ACTION.ESCALATION_CREATED),
+		).toHaveLength(2);
 
-		expect(escalationAudits.filter((audit) => audit.action === AUDIT_ACTION.ESCALATION_SUPERSEDED)).toHaveLength(
-			1,
-		);
+		expect(
+			escalationAudits.filter((audit) => audit.action === AUDIT_ACTION.ESCALATION_SUPERSEDED),
+		).toHaveLength(1);
 	});
 
 	it('is idempotent: re-running with no state change does not duplicate active escalations or audit rows', async () => {
@@ -150,7 +156,9 @@ describe('Escalations (e2e)', () => {
 
 		await withActorHeaders(request(server).post(`/api/review-cases/${created.id}/run-rules`));
 
-		const second = await withActorHeaders(request(server).post(`/api/review-cases/${created.id}/run-rules`));
+		const second = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
 
 		expect(second.status).toBe(HttpStatus.OK);
 
@@ -160,7 +168,10 @@ describe('Escalations (e2e)', () => {
 
 		expect(escalations).toHaveLength(1);
 
-		expect(escalations[0]).toMatchObject({ status: ESCALATION_STATUS.ACTIVE, ruleId: 'R-DEADLINE-PASSED' });
+		expect(escalations[0]).toMatchObject({
+			status: ESCALATION_STATUS.ACTIVE,
+			ruleId: 'R-DEADLINE-PASSED',
+		});
 
 		const escalationAudits = await prisma.auditLog.findMany({
 			where: { caseId: created.id, action: AUDIT_ACTION.ESCALATION_CREATED },

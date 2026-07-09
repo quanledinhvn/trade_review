@@ -1,12 +1,9 @@
 import { Exclude, Expose, Type } from 'class-transformer';
 import type { CaseStatus } from '../../../domain/case-status';
 import type { RiskLevel, Severity } from '../../../domain/severity';
-import type {
-	DocumentType,
-	EscalationStatus,
-	EscalationType,
-	PackagingType,
-} from '../../../domain/types';
+import type { DocumentType } from '../../../domain/document-type';
+import type { EscalationStatus, EscalationType } from '../../../domain/escalation';
+import type { PackagingType } from '../../../domain/packaging';
 
 @Exclude()
 export class EscalationDto {

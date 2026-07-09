@@ -12,14 +12,8 @@
 		"riskRank": 40,
 		"assignedTeam": "trade_operations",
 		"assignedUser": null,
-		"requiredDocuments": [
-			"commercial_invoice",
-			"packing_list",
-			"transport_document"
-		],
-		"completedDocuments": [
-			"commercial_invoice"
-		],
+		"requiredDocuments": ["commercial_invoice", "packing_list", "transport_document"],
+		"completedDocuments": ["commercial_invoice"],
 		"invoiceValue": 125000,
 		"packagingType": "wooden_crate",
 		"ispm15Certified": false,
@@ -39,15 +33,8 @@
 		"riskRank": 40,
 		"assignedTeam": "trade_operations",
 		"assignedUser": null,
-		"requiredDocuments": [
-			"commercial_invoice",
-			"packing_list",
-			"transport_document"
-		],
-		"completedDocuments": [
-			"packing_list",
-			"transport_document"
-		],
+		"requiredDocuments": ["commercial_invoice", "packing_list", "transport_document"],
+		"completedDocuments": ["packing_list", "transport_document"],
 		"invoiceValue": 42000,
 		"packagingType": "cardboard_crate",
 		"ispm15Certified": false,
@@ -67,14 +54,8 @@
 		"riskRank": 10,
 		"assignedTeam": "trade_operations",
 		"assignedUser": "dana",
-		"requiredDocuments": [
-			"commercial_invoice",
-			"packing_list"
-		],
-		"completedDocuments": [
-			"commercial_invoice",
-			"packing_list"
-		],
+		"requiredDocuments": ["commercial_invoice", "packing_list"],
+		"completedDocuments": ["commercial_invoice", "packing_list"],
 		"invoiceValue": 18000,
 		"packagingType": "plastic_box",
 		"ispm15Certified": null,
@@ -94,16 +75,8 @@
 		"riskRank": 30,
 		"assignedTeam": "management",
 		"assignedUser": null,
-		"requiredDocuments": [
-			"commercial_invoice",
-			"packing_list",
-			"transport_document"
-		],
-		"completedDocuments": [
-			"commercial_invoice",
-			"packing_list",
-			"transport_document"
-		],
+		"requiredDocuments": ["commercial_invoice", "packing_list", "transport_document"],
+		"completedDocuments": ["commercial_invoice", "packing_list", "transport_document"],
 		"invoiceValue": 480000,
 		"packagingType": "pallet_generic",
 		"ispm15Certified": null,
@@ -123,15 +96,8 @@
 		"riskRank": 40,
 		"assignedTeam": "trade_operations",
 		"assignedUser": null,
-		"requiredDocuments": [
-			"commercial_invoice",
-			"packing_list",
-			"transport_document"
-		],
-		"completedDocuments": [
-			"commercial_invoice",
-			"packing_list"
-		],
+		"requiredDocuments": ["commercial_invoice", "packing_list", "transport_document"],
+		"completedDocuments": ["commercial_invoice", "packing_list"],
 		"invoiceValue": 65000,
 		"packagingType": "fibreboard_box",
 		"ispm15Certified": null,
@@ -182,15 +148,8 @@
 		"riskRank": 40,
 		"assignedTeam": "trade_operations",
 		"assignedUser": null,
-		"requiredDocuments": [
-			"commercial_invoice",
-			"packing_list",
-			"transport_document"
-		],
-		"completedDocuments": [
-			"commercial_invoice",
-			"packing_list"
-		],
+		"requiredDocuments": ["commercial_invoice", "packing_list", "transport_document"],
+		"completedDocuments": ["commercial_invoice", "packing_list"],
 		"invoiceValue": 27000,
 		"packagingType": "plastic_box",
 		"ispm15Certified": null,
@@ -210,16 +169,8 @@
 		"riskRank": 10,
 		"assignedTeam": "trade_operations",
 		"assignedUser": "carol",
-		"requiredDocuments": [
-			"commercial_invoice",
-			"packing_list",
-			"transport_document"
-		],
-		"completedDocuments": [
-			"commercial_invoice",
-			"packing_list",
-			"transport_document"
-		],
+		"requiredDocuments": ["commercial_invoice", "packing_list", "transport_document"],
+		"completedDocuments": ["commercial_invoice", "packing_list", "transport_document"],
 		"invoiceValue": 54000,
 		"packagingType": "cardboard_crate",
 		"ispm15Certified": null,
@@ -239,14 +190,8 @@
 		"riskRank": 10,
 		"assignedTeam": "trade_operations",
 		"assignedUser": null,
-		"requiredDocuments": [
-			"commercial_invoice",
-			"packing_list",
-			"transport_document"
-		],
-		"completedDocuments": [
-			"commercial_invoice"
-		],
+		"requiredDocuments": ["commercial_invoice", "packing_list", "transport_document"],
+		"completedDocuments": ["commercial_invoice"],
 		"invoiceValue": 15000,
 		"packagingType": "wooden_box_ordinary",
 		"ispm15Certified": false,
@@ -266,14 +211,8 @@
 		"riskRank": 30,
 		"assignedTeam": "trade_operations",
 		"assignedUser": "bob",
-		"requiredDocuments": [
-			"commercial_invoice",
-			"packing_list",
-			"transport_document"
-		],
-		"completedDocuments": [
-			"commercial_invoice"
-		],
+		"requiredDocuments": ["commercial_invoice", "packing_list", "transport_document"],
+		"completedDocuments": ["commercial_invoice"],
 		"invoiceValue": 39000,
 		"packagingType": "reconstituted_wood_box",
 		"ispm15Certified": null,

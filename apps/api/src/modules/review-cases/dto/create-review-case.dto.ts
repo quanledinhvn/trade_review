@@ -15,7 +15,7 @@ import {
 	type ValidatorConstraintInterface,
 } from 'class-validator';
 import { DOCUMENT_TYPE_VALUES } from '../../../domain/document-type';
-import { PACKAGING_TYPE_VALUES } from '../../../domain/packaging-type';
+import { PACKAGING_TYPE_VALUES } from '../../../domain/packaging';
 
 @ValidatorConstraint({ name: 'completedDocumentsSubset', async: false })
 class CompletedDocumentsSubsetConstraint implements ValidatorConstraintInterface {

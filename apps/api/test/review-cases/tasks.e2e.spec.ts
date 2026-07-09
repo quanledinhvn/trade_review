@@ -3,7 +3,8 @@ import request from 'supertest';
 import { AUDIT_ACTION } from '../../src/domain/audit';
 import { CASE_STATUS } from '../../src/domain/case-status';
 import { TASK_STATUS } from '../../src/domain/task-status';
-import { DOCUMENT_TYPE, ESCALATION_STATUS, RESOLVED_REASON } from '../../src/domain/types';
+import { DOCUMENT_TYPE } from '../../src/domain/document-type';
+import { ESCALATION_STATUS, RESOLVED_REASON } from '../../src/domain/escalation';
 import { PrismaService } from '../../src/database/prisma.service';
 import { canonicalCasePayload, seedInReviewCase, withActorHeaders } from '../utils';
 

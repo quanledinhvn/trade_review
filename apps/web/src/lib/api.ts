@@ -20,6 +20,7 @@ api.interceptors.request.use((config) => {
 		const { user, team } = useSessionStore.getState();
 
 		config.headers.set('X-Actor-Id', user);
+
 		config.headers.set('X-Actor-Team', team);
 	}
 

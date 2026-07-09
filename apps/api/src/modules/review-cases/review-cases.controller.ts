@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	Get,
+	HttpCode,
+	HttpStatus,
+	Param,
+	Post,
+	Query,
+	UseGuards,
+} from '@nestjs/common';
 import { Actor, ActorContextGuard } from '../../common/auth';
 import type { ActorContext } from '../../domain';
 import { TaskDto } from '../tasks/dto/task.dto';
@@ -46,10 +56,7 @@ export class ReviewCasesController {
 	}
 
 	@Get(':id/tasks')
-	listTasks(
-		@Param('id') id: string,
-		@Query('status') status?: string,
-	): Promise<TaskDto[]> {
+	listTasks(@Param('id') id: string, @Query('status') status?: string): Promise<TaskDto[]> {
 		return this.tasksService.listByCaseId(id, status);
 	}
 

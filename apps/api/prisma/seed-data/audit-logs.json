@@ -26,12 +26,7 @@
 			"riskLevel": "low"
 		},
 		"after": {
-			"matched_rules": [
-				"R-DOC-PACKING",
-				"R-DOC-TRANSPORT",
-				"R-WOOD-ISPM15",
-				"R-DEADLINE-48H"
-			],
+			"matched_rules": ["R-DOC-PACKING", "R-DOC-TRANSPORT", "R-WOOD-ISPM15", "R-DEADLINE-48H"],
 			"riskLevel": "critical"
 		},
 		"actor": "system",
@@ -128,9 +123,7 @@
 			"riskLevel": "low"
 		},
 		"after": {
-			"matched_rules": [
-				"R-DOC-INVOICE"
-			],
+			"matched_rules": ["R-DOC-INVOICE"],
 			"riskLevel": "critical"
 		},
 		"actor": "system",

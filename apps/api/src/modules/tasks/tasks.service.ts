@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { type Escalation, type Task } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
-import {
-	AppConflictException,
-	AppNotFoundException,
-} from '../../common/exceptions/exception';
+import { AppConflictException, AppNotFoundException } from '../../common/exceptions/exception';
 import { PrismaService } from '../../database/prisma.service';
 import {
 	assertActorOnAssignedTeam,
@@ -92,8 +89,7 @@ export class TasksService {
 			}
 
 			const tasks = await tx.task.findMany({ where: { caseId: task.caseId } });
-			const caseReady =
-				task.case.status !== CASE_STATUS.COMPLETED && isCaseReadyToComplete(tasks);
+			const caseReady = task.case.status !== CASE_STATUS.COMPLETED && isCaseReadyToComplete(tasks);
 
 			let resolvedEscalations: Escalation[] = [];
 

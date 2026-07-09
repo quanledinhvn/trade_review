@@ -1,7 +1,7 @@
 import { Exclude, Expose } from 'class-transformer';
 import type { Severity } from '../../../domain/severity';
 import type { TaskStatus } from '../../../domain/task-status';
-import type { DocumentType } from '../../../domain/types';
+import type { DocumentType } from '../../../domain/document-type';
 
 @Exclude()
 export class TaskDto {

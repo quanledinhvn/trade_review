@@ -3,7 +3,8 @@ import request from 'supertest';
 import { AUDIT_ACTION } from '../../src/domain/audit';
 import { CASE_STATUS } from '../../src/domain/case-status';
 import { RISK_LEVEL, SEVERITY_RANK } from '../../src/domain/severity';
-import { AUDIT_ENTITY_TYPE, DOCUMENT_TYPE } from '../../src/domain/types';
+import { AUDIT_ENTITY_TYPE } from '../../src/domain/audit';
+import { DOCUMENT_TYPE } from '../../src/domain/document-type';
 import type { ReviewCaseResponseDto } from '../../src/modules/review-cases/dto/review-case-response.dto';
 import type { ErrorDto } from '../../src/common/exceptions/exception';
 import { PrismaService } from '../../src/database/prisma.service';
@@ -20,10 +21,9 @@ describe('POST /api/review-cases (e2e)', () => {
 	});
 
 	it('creates a case with computed deadline and defaults', async () => {
-		const response = await withActorHeaders(
-			request(server).post('/api/review-cases'),
-			{ actorId: 'minh' },
-		).send(validCreatePayload);
+		const response = await withActorHeaders(request(server).post('/api/review-cases'), {
+			actorId: 'minh',
+		}).send(validCreatePayload);
 
 		const body = response.body as ReviewCaseResponseDto;
 
@@ -53,15 +53,14 @@ describe('POST /api/review-cases (e2e)', () => {
 	});
 
 	it('returns 400 when completed_documents is not a subset of required_documents', async () => {
-		const response = await withActorHeaders(
-			request(server).post('/api/review-cases'),
-			{ actorId: 'minh' },
-		).send({
-				...validCreatePayload,
-				case_reference: 'REV-2026-TEST-400',
-				completed_documents: [DOCUMENT_TYPE.TRANSPORT_DOCUMENT],
-				required_documents: [DOCUMENT_TYPE.COMMERCIAL_INVOICE],
-			});
+		const response = await withActorHeaders(request(server).post('/api/review-cases'), {
+			actorId: 'minh',
+		}).send({
+			...validCreatePayload,
+			case_reference: 'REV-2026-TEST-400',
+			completed_documents: [DOCUMENT_TYPE.TRANSPORT_DOCUMENT],
+			required_documents: [DOCUMENT_TYPE.COMMERCIAL_INVOICE],
+		});
 
 		const body = response.body as ErrorDto;
 
@@ -71,14 +70,13 @@ describe('POST /api/review-cases (e2e)', () => {
 	});
 
 	it('returns 400 for invalid packaging_type enum', async () => {
-		const response = await withActorHeaders(
-			request(server).post('/api/review-cases'),
-			{ actorId: 'minh' },
-		).send({
-				...validCreatePayload,
-				case_reference: 'REV-2026-TEST-400B',
-				packaging_type: 'wooden crates',
-			});
+		const response = await withActorHeaders(request(server).post('/api/review-cases'), {
+			actorId: 'minh',
+		}).send({
+			...validCreatePayload,
+			case_reference: 'REV-2026-TEST-400B',
+			packaging_type: 'wooden crates',
+		});
 
 		const body = response.body as ErrorDto;
 
@@ -88,14 +86,13 @@ describe('POST /api/review-cases (e2e)', () => {
 	});
 
 	it('returns 400 when review_window_days is not positive', async () => {
-		const response = await withActorHeaders(
-			request(server).post('/api/review-cases'),
-			{ actorId: 'minh' },
-		).send({
-				...validCreatePayload,
-				case_reference: 'REV-2026-TEST-400C',
-				review_window_days: 0,
-			});
+		const response = await withActorHeaders(request(server).post('/api/review-cases'), {
+			actorId: 'minh',
+		}).send({
+			...validCreatePayload,
+			case_reference: 'REV-2026-TEST-400C',
+			review_window_days: 0,
+		});
 
 		const body = response.body as ErrorDto;
 
@@ -109,10 +106,9 @@ describe('POST /api/review-cases (e2e)', () => {
 			validCreatePayload,
 		);
 
-		const response = await withActorHeaders(
-			request(server).post('/api/review-cases'),
-			{ actorId: 'minh' },
-		).send(validCreatePayload);
+		const response = await withActorHeaders(request(server).post('/api/review-cases'), {
+			actorId: 'minh',
+		}).send(validCreatePayload);
 
 		const body = response.body as ErrorDto;
 

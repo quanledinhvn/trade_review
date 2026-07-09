@@ -60,9 +60,7 @@ export class WorkQueueQueryBuilder {
 	}
 
 	private buildWhere(): Prisma.ReviewCaseWhereInput {
-		const conditions: Prisma.ReviewCaseWhereInput[] = [
-			{ status: CASE_STATUS.IN_REVIEW },
-		];
+		const conditions: Prisma.ReviewCaseWhereInput[] = [{ status: CASE_STATUS.IN_REVIEW }];
 
 		if (this.query.assigned_team) {
 			conditions.push({ assignedTeam: this.query.assigned_team });

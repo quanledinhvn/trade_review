@@ -59,16 +59,16 @@ Component diagram, ERD, rule-engine flow, and state machines:
 
 ## What I done
 
-| Area | Status |
-|---|---|
-| Workflow understanding | ✅ Done |
-| Data modelling | ✅ Done — full Prisma schema (cases, tasks, escalations, audit_logs) |
-| Rule engine design | ✅ Done — JSON-config engine, 7 rules, idempotent `run-rules` |
-| Deadline and risk logic | ✅ Done — deadline/time-remaining calc + risk roll-up |
-| API and work queue design | ✅ Done — all 9 endpoints incl. work queue filter/sort/pagination |
-| Testing | ✅ Done — rule, deadline, escalation, task, queue-ordering tests |
-| Auditability | ✅ Done — append-only audit log + `GET .../audit-log` |
-| Documentation | ✅ Done — README, xdocs/ |
+| Area                      | Status                                                               |
+| ------------------------- | -------------------------------------------------------------------- |
+| Workflow understanding    | ✅ Done                                                              |
+| Data modelling            | ✅ Done — full Prisma schema (cases, tasks, escalations, audit_logs) |
+| Rule engine design        | ✅ Done — JSON-config engine, 7 rules, idempotent `run-rules`        |
+| Deadline and risk logic   | ✅ Done — deadline/time-remaining calc + risk roll-up                |
+| API and work queue design | ✅ Done — all 9 endpoints incl. work queue filter/sort/pagination    |
+| Testing                   | ✅ Done — rule, deadline, escalation, task, queue-ordering tests     |
+| Auditability              | ✅ Done — append-only audit log + `GET .../audit-log`                |
+| Documentation             | ✅ Done — README, xdocs/                                             |
 
 Bonus features done:
 

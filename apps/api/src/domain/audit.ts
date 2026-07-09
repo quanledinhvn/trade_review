@@ -9,3 +9,11 @@ export const AUDIT_ACTION = {
 	ESCALATION_SUPERSEDED: 'escalation_superseded',
 	ESCALATION_RESOLVED: 'escalation_resolved',
 } as const;
+
+export const AUDIT_ENTITY_TYPE = {
+	CASE: 'case',
+	TASK: 'task',
+	ESCALATION: 'escalation',
+} as const;
+
+export type AuditEntityType = (typeof AUDIT_ENTITY_TYPE)[keyof typeof AUDIT_ENTITY_TYPE];

@@ -50,8 +50,7 @@ describe('deadline', () => {
 
 			for (const day of ['2026-07-09', '2026-07-10', '2026-07-11', '2026-07-12', '2026-07-13']) {
 				const deadline = utcDateOnly(new Date(`${day}T00:00:00.000Z`));
-				const included =
-					deadline.getTime() >= min.getTime() && deadline.getTime() <= max.getTime();
+				const included = deadline.getTime() >= min.getTime() && deadline.getTime() <= max.getTime();
 				const hoursLeft = timeRemainingHours(deadline, now);
 				const isApproaching = hoursLeft >= 0 && hoursLeft < 48;
 

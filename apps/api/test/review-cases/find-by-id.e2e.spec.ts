@@ -16,10 +16,9 @@ describe('GET /api/review-cases/:id (e2e)', () => {
 	});
 
 	it('returns the full case with time_remaining_hours', async () => {
-		const created = await withActorHeaders(
-			request(server).post('/api/review-cases'),
-			{ actorId: 'minh' },
-		).send(validCreatePayload);
+		const created = await withActorHeaders(request(server).post('/api/review-cases'), {
+			actorId: 'minh',
+		}).send(validCreatePayload);
 
 		const createdBody = created.body as ReviewCaseResponseDto;
 

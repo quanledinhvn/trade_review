@@ -1,4 +1,23 @@
-import { PACKAGING_TYPE, type PackagingType } from './types';
+export const PACKAGING_TYPE = {
+	WOODEN_PALLET: 'wooden_pallet',
+	WOODEN_CRATE: 'wooden_crate',
+	NATURAL_WOOD_BOX: 'natural_wood_box',
+	WOODEN_BUNDLE: 'wooden_bundle',
+	WOODEN_BOX_ORDINARY: 'wooden_box_ordinary',
+	RECONSTITUTED_WOOD_BOX: 'reconstituted_wood_box',
+	FIBREBOARD_BOX: 'fibreboard_box',
+	PLASTIC_BOX: 'plastic_box',
+	CARDBOARD_CRATE: 'cardboard_crate',
+	PALLET_GENERIC: 'pallet_generic',
+} as const;
+
+export type PackagingType = (typeof PACKAGING_TYPE)[keyof typeof PACKAGING_TYPE];
+
+export const PACKAGING_TYPE_VALUES = Object.values(PACKAGING_TYPE) as PackagingType[];
+
+export function isPackagingType(value: string): value is PackagingType {
+	return (PACKAGING_TYPE_VALUES as string[]).includes(value);
+}
 
 export interface PackagingMeta {
 	rec21Code: string;

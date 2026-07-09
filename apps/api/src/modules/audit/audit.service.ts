@@ -3,7 +3,7 @@ import type { Escalation, Prisma, ReviewCase, Task } from '@prisma/client';
 import { v7 as uuidv7 } from 'uuid';
 
 import { AUDIT_ACTION } from '../../domain/audit';
-import { AUDIT_ENTITY_TYPE } from '../../domain/types';
+import { AUDIT_ENTITY_TYPE } from '../../domain/audit';
 
 type TransactionClient = Prisma.TransactionClient;
 

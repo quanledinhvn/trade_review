@@ -25,7 +25,10 @@ export async function completeTask(
 	payload: CompleteTaskRequest,
 ): Promise<CompleteTaskResponse> {
 	try {
-		return (await api.post(`/tasks/${encodeURIComponent(taskId)}/complete`, payload)) as CompleteTaskResponse;
+		return (await api.post(
+			`/tasks/${encodeURIComponent(taskId)}/complete`,
+			payload,
+		)) as CompleteTaskResponse;
 	} catch (error) {
 		if (axios.isAxiosError(error) && error.response?.status === 409) {
 			throw new TaskAlreadyCompletedError();
@@ -47,5 +50,8 @@ export function reassignTask(
 	taskId: string,
 	payload: ReassignRequest,
 ): Promise<ReassignTaskResponse> {
-	return api.post(`/tasks/${encodeURIComponent(taskId)}/reassign`, payload) as Promise<ReassignTaskResponse>;
+	return api.post(
+		`/tasks/${encodeURIComponent(taskId)}/reassign`,
+		payload,
+	) as Promise<ReassignTaskResponse>;
 }

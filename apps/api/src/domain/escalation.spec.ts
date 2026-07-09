@@ -1,7 +1,7 @@
 import { APPLY_ESCALATION_ACTION, applyEscalation } from './escalation';
 import type { EscalationLike, EvaluatedEscalation } from './escalation';
 import { RISK_LEVEL } from './severity';
-import { ESCALATION_STATUS, ESCALATION_TYPE } from './types';
+import { ESCALATION_STATUS, ESCALATION_TYPE } from './escalation';
 
 function makeExisting(overrides: Partial<EscalationLike> = {}): EscalationLike {
 	return {

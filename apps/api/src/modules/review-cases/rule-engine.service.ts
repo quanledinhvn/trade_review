@@ -313,7 +313,11 @@ export class RuleEngineService {
 
 		await this.auditService.auditReviewCase(tx, {
 			action: AUDIT_ACTION.RULES_EXECUTED,
-			after: { id: reviewCase.id, caseReference: reviewCase.caseReference, riskLevel: riskRollup.riskLevel },
+			after: {
+				id: reviewCase.id,
+				caseReference: reviewCase.caseReference,
+				riskLevel: riskRollup.riskLevel,
+			},
 			matchedRules: matchedRuleIds,
 			createdRuleIds: newlyCreatedRuleIds,
 			actor: actorId,

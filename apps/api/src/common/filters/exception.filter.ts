@@ -52,9 +52,7 @@ export class GlobalHandleExceptionFilter implements ExceptionFilter {
 		}
 
 		const responseBody: ErrorDto =
-			extraData !== undefined
-				? { error: { ...body.error, details: extraData } }
-				: body;
+			extraData !== undefined ? { error: { ...body.error, details: extraData } } : body;
 
 		res.status(status).json(responseBody);
 	}

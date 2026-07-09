@@ -1,4 +1,5 @@
-import { DOCUMENT_TYPE, PACKAGING_TYPE } from '../../src/domain/types';
+import { DOCUMENT_TYPE } from '../../src/domain/document-type';
+import { PACKAGING_TYPE } from '../../src/domain/packaging';
 
 export const validCreatePayload = {
 	case_reference: 'REV-2026-TEST-001',

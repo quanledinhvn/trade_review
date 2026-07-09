@@ -189,7 +189,11 @@ export function AddReviewCaseDialog({
 			return;
 		}
 
-		if (!request.completed_documents.every((document) => request.required_documents.includes(document))) {
+		if (
+			!request.completed_documents.every((document) =>
+				request.required_documents.includes(document),
+			)
+		) {
 			setError('Completed documents must be a subset of required documents.');
 
 			return;
@@ -354,9 +358,7 @@ export function AddReviewCaseDialog({
 									<input
 										type="checkbox"
 										checked={form.required_documents.includes(documentType)}
-										onChange={(event) =>
-											toggleRequiredDocument(documentType, event.target.checked)
-										}
+										onChange={(event) => toggleRequiredDocument(documentType, event.target.checked)}
 										className="h-4 w-4 rounded border border-input"
 									/>
 									<span>{formatEnumLabel(documentType)}</span>
