@@ -57,15 +57,25 @@ Source: `docs/se-safiri-take_home_2.md`. Each section lists what the brief requi
 
 **docs**
 
-- Deadline = `arrivalDate + reviewWindowDays`
-- Time remaining, approaching (< 48h), passed
+- System-managed deadline, risk level, time remaining
 
 **assumptions**
 
 - `status`, `riskLevel`, `time_remaining_hours` also system-managed
-- Business-calendar deadline (skip weekends/holidays) deferred as bonus
 
-## 6. Task Workflow
+## 6. Timezone & Date/Time
+
+**docs**
+
+- Deadline = `arrivalDate + reviewWindowDays`; time remaining / 48h / passed rules
+- Business calendar (skip weekends/holidays) — bonus
+
+**assumptions**
+
+- Date-only fields parsed as UTC
+- No IANA timezone, DST, or business calendar
+
+## 7. Task Workflow
 
 **docs**
 
@@ -78,7 +88,7 @@ Source: `docs/se-safiri-take_home_2.md`. Each section lists what the brief requi
 - Completing a document task syncs `completedDocuments` (keeps `run-rules` idempotent)
 - No file upload — only `resolution_comment`
 
-## 7. Escalations
+## 8. Escalations
 
 **docs**
 
@@ -91,7 +101,7 @@ Source: `docs/se-safiri-take_home_2.md`. Each section lists what the brief requi
 - One active per type — resolve-then-insert (`superseded`); history retained
 - Case complete resolves active escalations (`case_completed`)
 
-## 8. Rule Engine
+## 9. Rule Engine
 
 **docs**
 
@@ -104,7 +114,7 @@ Source: `docs/se-safiri-take_home_2.md`. Each section lists what the brief requi
 - `evaluate` (pure) → `apply` (idempotent writes)
 - `rule_snapshot` = frozen full `RuleDefinition` per task/escalation; unique `(case_id, rule_id)` prevents duplicate tasks
 
-## 9. Audit & Actors
+## 10. Audit & Actors
 
 **docs**
 
@@ -117,7 +127,7 @@ Source: `docs/se-safiri-take_home_2.md`. Each section lists what the brief requi
 - `actor` from `X-Actor-Id` header (`"system"` for rule engine)
 - Team required, user optional
 
-## 10. API
+## 11. API
 
 **docs**
 
@@ -131,7 +141,7 @@ Source: `docs/se-safiri-take_home_2.md`. Each section lists what the brief requi
 - Work queue: `in_review` only; paginated; filter `deadline` / `assigned_team` / `assigned_user`; sort `risk` or `deadline`
 - Errors: `{ error: { code, message, details? } }` — 400 / 404 / 409
 
-## 11. Database
+## 12. Database
 
 **assumptions**
 
