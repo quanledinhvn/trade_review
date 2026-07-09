@@ -8,6 +8,11 @@ levels, review tasks, escalation, work queue, audit log.
 - Full API documentation & example requests: [xdocs/API.md](xdocs/API.md)
 - AI usage: [xdocs/AI-notes.md](xdocs/AI-notes.md)
 
+## Live deployment
+
+- **Web UI:** [trade-review-web-omega.vercel.app/work-queue](https://trade-review-web-omega.vercel.app/work-queue)
+- **API:** [p01--tradereview--gcjg8dny5mt5.code.run/api](https://p01--tradereview--gcjg8dny5mt5.code.run/api) — health check: [`/api/health`](https://p01--tradereview--gcjg8dny5mt5.code.run/api/health)
+
 ## Stack
 
 - `apps/api` — NestJS + Prisma + PostgreSQL + Winston.
