@@ -1,0 +1,25 @@
+{
+	"moduleFileExtensions": ["js", "json", "ts"],
+	"rootDir": "..",
+	"testRegex": ".*\\.e2e\\.spec\\.ts$",
+	"transform": {
+		"^.+\\.(t|j)s$": [
+			"ts-jest",
+			{
+				"tsconfig": {
+					"module": "CommonJS",
+					"moduleResolution": "Node10",
+					"experimentalDecorators": true,
+					"emitDecoratorMetadata": true,
+					"strictPropertyInitialization": false,
+					"baseUrl": "./",
+					"types": ["node", "jest"]
+				}
+			}
+		]
+	},
+	"testEnvironment": "node",
+	"testTimeout": 30000,
+	"transformIgnorePatterns": ["/node_modules/(?!uuid)"],
+	"setupFilesAfterEnv": ["<rootDir>/test/jest.setup.ts"]
+}

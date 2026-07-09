@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ReviewCase {
+  id                 String   @id
+  caseReference      String   @unique @map("case_reference")
+  shipmentReference  String   @map("shipment_reference")
+  importer           String
+  arrivalDate        DateTime @map("arrival_date") @db.Date
+  reviewWindowDays   Int      @map("review_window_days")
+  deadline           DateTime @db.Date
+  status             String
+  riskLevel          String   @map("risk_level")
+  riskRank           Int      @map("risk_rank")
+  assignedTeam       String   @map("assigned_team")
+  assignedUser       String?  @map("assigned_user")
+  requiredDocuments  String[] @map("required_documents")
+  completedDocuments String[] @map("completed_documents")
+  invoiceValue       Decimal  @map("invoice_value") @db.Decimal(15, 2)
+  packagingType      String?  @map("packaging_type")
+  ispm15Certified    Boolean? @map("ispm15_certified")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  tasks       Task[]
+  escalations Escalation[]
+  auditLogs   AuditLog[]
+
+  @@index([riskRank(sort: Desc), deadline(sort: Asc)])
+  @@map("review_cases")
+}
+
+model Task {
+  id                String   @id
+  caseId            String   @map("case_id")
+  ruleId            String   @map("rule_id")
+  title             String
+  reason            String
+  description       String
+  severity          String
+  severityRank      Int      @map("severity_rank")
+  suggestedAction   String   @map("suggested_action")
+  dueDate           DateTime @map("due_date") @db.Date
+  assignedTeam      String   @map("assigned_team")
+  assignedUser      String?  @map("assigned_user")
+  status            String
+  resolutionComment String?  @map("resolution_comment")
+  documentType      String?  @map("document_type")
+  ruleSnapshot      Json     @map("rule_snapshot")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  case ReviewCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+
+  @@unique([caseId, ruleId])
+  @@map("tasks")
+}
+
+model Escalation {
+  id              String    @id
+  caseId          String    @map("case_id")
+  ruleId          String    @map("rule_id")
+  type            String
+  severity        String
+  reason          String
+  suggestedAction String    @map("suggested_action")
+  status          String
+  resolvedAt      DateTime? @map("resolved_at")
+  resolvedReason  String?   @map("resolved_reason")
+  ruleSnapshot    Json      @map("rule_snapshot")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  case ReviewCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+
+  @@map("escalations")
+}
+
+model AuditLog {
+  id         String   @id
+  caseId     String   @map("case_id")
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  summary    String
+  before     Json?
+  after      Json?
+  actor      String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  case ReviewCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+
+  @@map("audit_logs")
+}

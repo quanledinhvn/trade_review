@@ -1,0 +1,283 @@
+[
+	{
+		"id": "019f46a7-2229-7029-8f25-3495ab1a1903",
+		"caseReference": "REV-2026-0119",
+		"shipmentReference": "SAF-TIME-2026-0119-USLAX",
+		"importer": "Eastland Retail Group (via USLAX, Los Angeles)",
+		"arrivalDate": "2026-07-01T00:00:00.000Z",
+		"reviewWindowDays": 7,
+		"deadline": "2026-07-08T00:00:00.000Z",
+		"status": "in_review",
+		"riskLevel": "critical",
+		"riskRank": 40,
+		"assignedTeam": "trade_operations",
+		"assignedUser": null,
+		"requiredDocuments": [
+			"commercial_invoice",
+			"packing_list",
+			"transport_document"
+		],
+		"completedDocuments": [
+			"commercial_invoice"
+		],
+		"invoiceValue": 125000,
+		"packagingType": "wooden_crate",
+		"ispm15Certified": false,
+		"createdAt": "2026-07-01T09:00:00.000Z",
+		"updatedAt": "2026-07-06T12:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-384e2be91e8e",
+		"caseReference": "REV-2026-0201",
+		"shipmentReference": "SAF-TIME-2026-0201-NLRTM",
+		"importer": "Northbridge Import Co (via NLRTM, Rotterdam)",
+		"arrivalDate": "2026-07-10T00:00:00.000Z",
+		"reviewWindowDays": 10,
+		"deadline": "2026-07-20T00:00:00.000Z",
+		"status": "open",
+		"riskLevel": "critical",
+		"riskRank": 40,
+		"assignedTeam": "trade_operations",
+		"assignedUser": null,
+		"requiredDocuments": [
+			"commercial_invoice",
+			"packing_list",
+			"transport_document"
+		],
+		"completedDocuments": [
+			"packing_list",
+			"transport_document"
+		],
+		"invoiceValue": 42000,
+		"packagingType": "cardboard_crate",
+		"ispm15Certified": false,
+		"createdAt": "2026-07-10T08:00:00.000Z",
+		"updatedAt": "2026-07-10T08:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-3e8c05c6a2e3",
+		"caseReference": "REV-2026-0202",
+		"shipmentReference": "SAF-TIME-2026-0202-VNSGN",
+		"importer": "Pacific Home Goods (via VNSGN, Ho Chi Minh City)",
+		"arrivalDate": "2026-07-05T00:00:00.000Z",
+		"reviewWindowDays": 14,
+		"deadline": "2026-07-19T00:00:00.000Z",
+		"status": "open",
+		"riskLevel": "low",
+		"riskRank": 10,
+		"assignedTeam": "trade_operations",
+		"assignedUser": "dana",
+		"requiredDocuments": [
+			"commercial_invoice",
+			"packing_list"
+		],
+		"completedDocuments": [
+			"commercial_invoice",
+			"packing_list"
+		],
+		"invoiceValue": 18000,
+		"packagingType": "plastic_box",
+		"ispm15Certified": null,
+		"createdAt": "2026-07-05T08:00:00.000Z",
+		"updatedAt": "2026-07-05T08:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-432cef10bed3",
+		"caseReference": "REV-2026-0203",
+		"shipmentReference": "SAF-TIME-2026-0203-USLAX",
+		"importer": "Summit Industrial Supply (via USLAX, Los Angeles)",
+		"arrivalDate": "2026-07-08T00:00:00.000Z",
+		"reviewWindowDays": 7,
+		"deadline": "2026-07-15T00:00:00.000Z",
+		"status": "in_review",
+		"riskLevel": "high",
+		"riskRank": 30,
+		"assignedTeam": "management",
+		"assignedUser": null,
+		"requiredDocuments": [
+			"commercial_invoice",
+			"packing_list",
+			"transport_document"
+		],
+		"completedDocuments": [
+			"commercial_invoice",
+			"packing_list",
+			"transport_document"
+		],
+		"invoiceValue": 480000,
+		"packagingType": "pallet_generic",
+		"ispm15Certified": null,
+		"createdAt": "2026-07-08T08:00:00.000Z",
+		"updatedAt": "2026-07-08T08:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-47f4f5075cad",
+		"caseReference": "REV-2026-0204",
+		"shipmentReference": "SAF-TIME-2026-0204-USLAX",
+		"importer": "Coastal Freight Traders (via USLAX, Los Angeles)",
+		"arrivalDate": "2026-06-20T00:00:00.000Z",
+		"reviewWindowDays": 5,
+		"deadline": "2026-06-25T00:00:00.000Z",
+		"status": "in_review",
+		"riskLevel": "critical",
+		"riskRank": 40,
+		"assignedTeam": "trade_operations",
+		"assignedUser": null,
+		"requiredDocuments": [
+			"commercial_invoice",
+			"packing_list",
+			"transport_document"
+		],
+		"completedDocuments": [
+			"commercial_invoice",
+			"packing_list"
+		],
+		"invoiceValue": 65000,
+		"packagingType": "fibreboard_box",
+		"ispm15Certified": null,
+		"createdAt": "2026-06-20T08:00:00.000Z",
+		"updatedAt": "2026-07-09T00:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-4a9e828c1e4d",
+		"caseReference": "REV-2026-0205",
+		"shipmentReference": "SAF-TIME-2026-0205-NLRTM",
+		"importer": "Green Valley Timber Traders (via NLRTM, Rotterdam)",
+		"arrivalDate": "2026-07-06T00:00:00.000Z",
+		"reviewWindowDays": 10,
+		"deadline": "2026-07-16T00:00:00.000Z",
+		"status": "open",
+		"riskLevel": "low",
+		"riskRank": 10,
+		"assignedTeam": "trade_operations",
+		"assignedUser": null,
+		"requiredDocuments": [
+			"commercial_invoice",
+			"packing_list",
+			"transport_document",
+			"ispm15_certificate"
+		],
+		"completedDocuments": [
+			"commercial_invoice",
+			"packing_list",
+			"transport_document",
+			"ispm15_certificate"
+		],
+		"invoiceValue": 31000,
+		"packagingType": "wooden_pallet",
+		"ispm15Certified": true,
+		"createdAt": "2026-07-06T08:00:00.000Z",
+		"updatedAt": "2026-07-06T08:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-4e3b95e908b3",
+		"caseReference": "REV-2026-0206",
+		"shipmentReference": "SAF-TIME-2026-0206-VNSGN",
+		"importer": "Delta Apparel Group (via VNSGN, Ho Chi Minh City)",
+		"arrivalDate": "2026-07-04T00:00:00.000Z",
+		"reviewWindowDays": 7,
+		"deadline": "2026-07-11T00:00:00.000Z",
+		"status": "open",
+		"riskLevel": "critical",
+		"riskRank": 40,
+		"assignedTeam": "trade_operations",
+		"assignedUser": null,
+		"requiredDocuments": [
+			"commercial_invoice",
+			"packing_list",
+			"transport_document"
+		],
+		"completedDocuments": [
+			"commercial_invoice",
+			"packing_list"
+		],
+		"invoiceValue": 27000,
+		"packagingType": "plastic_box",
+		"ispm15Certified": null,
+		"createdAt": "2026-07-04T08:00:00.000Z",
+		"updatedAt": "2026-07-04T08:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-50d22af2430b",
+		"caseReference": "REV-2026-0207",
+		"shipmentReference": "SAF-TIME-2026-0207-USLAX",
+		"importer": "Harborline Electronics (via USLAX, Los Angeles)",
+		"arrivalDate": "2026-06-15T00:00:00.000Z",
+		"reviewWindowDays": 7,
+		"deadline": "2026-06-22T00:00:00.000Z",
+		"status": "completed",
+		"riskLevel": "low",
+		"riskRank": 10,
+		"assignedTeam": "trade_operations",
+		"assignedUser": "carol",
+		"requiredDocuments": [
+			"commercial_invoice",
+			"packing_list",
+			"transport_document"
+		],
+		"completedDocuments": [
+			"commercial_invoice",
+			"packing_list",
+			"transport_document"
+		],
+		"invoiceValue": 54000,
+		"packagingType": "cardboard_crate",
+		"ispm15Certified": null,
+		"createdAt": "2026-06-15T08:00:00.000Z",
+		"updatedAt": "2026-06-21T16:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-5555c5a7d53f",
+		"caseReference": "REV-2026-0208",
+		"shipmentReference": "SAF-TIME-2026-0208-NLRTM",
+		"importer": "Aster Consumer Goods (via NLRTM, Rotterdam)",
+		"arrivalDate": "2026-06-25T00:00:00.000Z",
+		"reviewWindowDays": 7,
+		"deadline": "2026-07-02T00:00:00.000Z",
+		"status": "completed",
+		"riskLevel": "low",
+		"riskRank": 10,
+		"assignedTeam": "trade_operations",
+		"assignedUser": null,
+		"requiredDocuments": [
+			"commercial_invoice",
+			"packing_list",
+			"transport_document"
+		],
+		"completedDocuments": [
+			"commercial_invoice"
+		],
+		"invoiceValue": 15000,
+		"packagingType": "wooden_box_ordinary",
+		"ispm15Certified": false,
+		"createdAt": "2026-06-25T08:00:00.000Z",
+		"updatedAt": "2026-06-27T10:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-5b29f58dee9b",
+		"caseReference": "REV-2026-0209",
+		"shipmentReference": "SAF-TIME-2026-0209-USLAX",
+		"importer": "Riverton Auto Parts (via USLAX, Los Angeles)",
+		"arrivalDate": "2026-07-03T00:00:00.000Z",
+		"reviewWindowDays": 12,
+		"deadline": "2026-07-15T00:00:00.000Z",
+		"status": "in_review",
+		"riskLevel": "high",
+		"riskRank": 30,
+		"assignedTeam": "trade_operations",
+		"assignedUser": "bob",
+		"requiredDocuments": [
+			"commercial_invoice",
+			"packing_list",
+			"transport_document"
+		],
+		"completedDocuments": [
+			"commercial_invoice"
+		],
+		"invoiceValue": 39000,
+		"packagingType": "reconstituted_wood_box",
+		"ispm15Certified": null,
+		"createdAt": "2026-07-03T08:00:00.000Z",
+		"updatedAt": "2026-07-09T09:00:00.000Z"
+	}
+]

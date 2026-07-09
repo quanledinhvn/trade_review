@@ -1,0 +1,86 @@
+[
+	{
+		"id": "019f46a7-2229-7029-8f25-8d7ca61022dc",
+		"caseId": "019f46a7-2229-7029-8f25-3495ab1a1903",
+		"ruleId": "R-DEADLINE-48H",
+		"type": "deadline",
+		"severity": "high",
+		"reason": "Review deadline within 48 hours",
+		"suggestedAction": "Escalate to shift manager",
+		"status": "active",
+		"resolvedAt": null,
+		"resolvedReason": null,
+		"ruleSnapshot": {
+			"ruleId": "R-DEADLINE-48H",
+			"version": 1,
+			"severity": "high",
+			"title": "Review deadline within 48 hours",
+			"suggestedAction": "Escalate to shift manager"
+		},
+		"createdAt": "2026-07-06T12:00:00.000Z",
+		"updatedAt": "2026-07-06T12:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-909adb9fadd5",
+		"caseId": "019f46a7-2229-7029-8f25-47f4f5075cad",
+		"ruleId": "R-DEADLINE-48H",
+		"type": "deadline",
+		"severity": "high",
+		"reason": "Review deadline within 48 hours",
+		"suggestedAction": "Escalate to shift manager",
+		"status": "resolved",
+		"resolvedAt": "2026-06-24T09:00:00.000Z",
+		"resolvedReason": "superseded",
+		"ruleSnapshot": {
+			"ruleId": "R-DEADLINE-48H",
+			"version": 1,
+			"severity": "high",
+			"title": "Review deadline within 48 hours",
+			"suggestedAction": "Escalate to shift manager"
+		},
+		"createdAt": "2026-06-23T08:00:00.000Z",
+		"updatedAt": "2026-06-24T09:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-9727cd7dd4f9",
+		"caseId": "019f46a7-2229-7029-8f25-47f4f5075cad",
+		"ruleId": "R-DEADLINE-PASSED",
+		"type": "deadline",
+		"severity": "critical",
+		"reason": "Review deadline passed",
+		"suggestedAction": "Immediate manager escalation",
+		"status": "active",
+		"resolvedAt": null,
+		"resolvedReason": null,
+		"ruleSnapshot": {
+			"ruleId": "R-DEADLINE-PASSED",
+			"version": 1,
+			"severity": "critical",
+			"title": "Review deadline passed",
+			"suggestedAction": "Immediate manager escalation"
+		},
+		"createdAt": "2026-06-24T09:00:00.000Z",
+		"updatedAt": "2026-06-24T09:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-9afcf42f039b",
+		"caseId": "019f46a7-2229-7029-8f25-5555c5a7d53f",
+		"ruleId": "R-DEADLINE-48H",
+		"type": "deadline",
+		"severity": "high",
+		"reason": "Review deadline within 48 hours",
+		"suggestedAction": "Escalate to shift manager",
+		"status": "resolved",
+		"resolvedAt": "2026-06-27T10:00:00.000Z",
+		"resolvedReason": "case_completed",
+		"ruleSnapshot": {
+			"ruleId": "R-DEADLINE-48H",
+			"version": 1,
+			"severity": "high",
+			"title": "Review deadline within 48 hours",
+			"suggestedAction": "Escalate to shift manager"
+		},
+		"createdAt": "2026-06-30T08:00:00.000Z",
+		"updatedAt": "2026-06-27T10:00:00.000Z"
+	}
+]

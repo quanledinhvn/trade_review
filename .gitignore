@@ -1,0 +1,30 @@
+.env
+.env.*
+!.env.*.example
+.DS_Store
+
+# Node / Vite / Moon / Nest
+node_modules/
+.moon/cache/
+**/dist/
+**/.vite/
+*.tsbuildinfo
+
+# Git worktrees
+.worktrees/
+
+# Tools / IDE / Scratch / AI
+.agents/
+.claude/
+.cursor/
+.scratch/
+.superpowers/
+.vscode/
+CLAUDE.md
+CONTEXT.md
+docs/
+
+# Test / deploy artifacts
+coverage/
+*.log
+.vercel/

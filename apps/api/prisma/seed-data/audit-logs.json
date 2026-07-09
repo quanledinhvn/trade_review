@@ -1,0 +1,335 @@
+[
+	{
+		"id": "019f46a7-2229-7029-8f25-9cdee41729b1",
+		"caseId": "019f46a7-2229-7029-8f25-3495ab1a1903",
+		"action": "case_created",
+		"entityType": "case",
+		"entityId": "019f46a7-2229-7029-8f25-3495ab1a1903",
+		"summary": "Case REV-2026-0119 created",
+		"before": null,
+		"after": {
+			"caseReference": "REV-2026-0119",
+			"status": "open",
+			"riskLevel": "low"
+		},
+		"actor": "alice",
+		"createdAt": "2026-07-01T09:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-a316a83a052c",
+		"caseId": "019f46a7-2229-7029-8f25-3495ab1a1903",
+		"action": "rules_executed",
+		"entityType": "case",
+		"entityId": "019f46a7-2229-7029-8f25-3495ab1a1903",
+		"summary": "Rule engine ran: 4 rule(s) matched, 3 task(s) created, risk_level low -> critical",
+		"before": {
+			"riskLevel": "low"
+		},
+		"after": {
+			"matched_rules": [
+				"R-DOC-PACKING",
+				"R-DOC-TRANSPORT",
+				"R-WOOD-ISPM15",
+				"R-DEADLINE-48H"
+			],
+			"riskLevel": "critical"
+		},
+		"actor": "system",
+		"createdAt": "2026-07-06T12:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-a7cd05cd8ac6",
+		"caseId": "019f46a7-2229-7029-8f25-3495ab1a1903",
+		"action": "task_created",
+		"entityType": "task",
+		"entityId": "019f46a7-2229-7029-8f25-5f54936bd44b",
+		"summary": "Task 'Missing packing list' created for rule R-DOC-PACKING",
+		"before": null,
+		"after": {
+			"ruleId": "R-DOC-PACKING",
+			"severity": "high",
+			"title": "Missing packing list"
+		},
+		"actor": "system",
+		"createdAt": "2026-07-06T12:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-a8ac3783c8d1",
+		"caseId": "019f46a7-2229-7029-8f25-3495ab1a1903",
+		"action": "task_created",
+		"entityType": "task",
+		"entityId": "019f46a7-2229-7029-8f25-6038d390793f",
+		"summary": "Task 'Missing transport document' created for rule R-DOC-TRANSPORT",
+		"before": null,
+		"after": {
+			"ruleId": "R-DOC-TRANSPORT",
+			"severity": "critical",
+			"title": "Missing transport document"
+		},
+		"actor": "system",
+		"createdAt": "2026-07-06T12:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-acf4546579b8",
+		"caseId": "019f46a7-2229-7029-8f25-3495ab1a1903",
+		"action": "task_created",
+		"entityType": "task",
+		"entityId": "019f46a7-2229-7029-8f25-6599279e23e1",
+		"summary": "Task 'Wood packaging not ISPM-15 certified' created for rule R-WOOD-ISPM15",
+		"before": null,
+		"after": {
+			"ruleId": "R-WOOD-ISPM15",
+			"severity": "high",
+			"title": "Wood packaging not ISPM-15 certified"
+		},
+		"actor": "system",
+		"createdAt": "2026-07-06T12:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-b324db4ec9bc",
+		"caseId": "019f46a7-2229-7029-8f25-3495ab1a1903",
+		"action": "escalation_created",
+		"entityType": "escalation",
+		"entityId": "019f46a7-2229-7029-8f25-8d7ca61022dc",
+		"summary": "Escalation 'Review deadline within 48 hours' created (severity high)",
+		"before": null,
+		"after": {
+			"type": "deadline",
+			"severity": "high",
+			"status": "active"
+		},
+		"actor": "system",
+		"createdAt": "2026-07-06T12:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-b66a98b28f3c",
+		"caseId": "019f46a7-2229-7029-8f25-384e2be91e8e",
+		"action": "case_created",
+		"entityType": "case",
+		"entityId": "019f46a7-2229-7029-8f25-384e2be91e8e",
+		"summary": "Case REV-2026-0201 created",
+		"before": null,
+		"after": {
+			"caseReference": "REV-2026-0201",
+			"status": "open",
+			"riskLevel": "low"
+		},
+		"actor": "alice",
+		"createdAt": "2026-07-10T08:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-b8d67db462d9",
+		"caseId": "019f46a7-2229-7029-8f25-384e2be91e8e",
+		"action": "rules_executed",
+		"entityType": "case",
+		"entityId": "019f46a7-2229-7029-8f25-384e2be91e8e",
+		"summary": "Rule engine ran: 1 rule(s) matched, 1 task(s) created, risk_level low -> critical",
+		"before": {
+			"riskLevel": "low"
+		},
+		"after": {
+			"matched_rules": [
+				"R-DOC-INVOICE"
+			],
+			"riskLevel": "critical"
+		},
+		"actor": "system",
+		"createdAt": "2026-07-10T08:05:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-bdb7b355c0f6",
+		"caseId": "019f46a7-2229-7029-8f25-384e2be91e8e",
+		"action": "task_created",
+		"entityType": "task",
+		"entityId": "019f46a7-2229-7029-8f25-6954bbb26507",
+		"summary": "Task 'Missing commercial invoice' created for rule R-DOC-INVOICE",
+		"before": null,
+		"after": {
+			"ruleId": "R-DOC-INVOICE",
+			"severity": "critical",
+			"title": "Missing commercial invoice"
+		},
+		"actor": "system",
+		"createdAt": "2026-07-10T08:05:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-c118055eb03a",
+		"caseId": "019f46a7-2229-7029-8f25-432cef10bed3",
+		"action": "case_created",
+		"entityType": "case",
+		"entityId": "019f46a7-2229-7029-8f25-432cef10bed3",
+		"summary": "Case REV-2026-0203 created",
+		"before": null,
+		"after": {
+			"caseReference": "REV-2026-0203",
+			"status": "open",
+			"riskLevel": "low"
+		},
+		"actor": "alice",
+		"createdAt": "2026-07-08T08:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-c430d5b36cc7",
+		"caseId": "019f46a7-2229-7029-8f25-432cef10bed3",
+		"action": "task_created",
+		"entityType": "task",
+		"entityId": "019f46a7-2229-7029-8f25-6d735fd8dd9e",
+		"summary": "Task 'High-value shipment requires manager review' created for rule R-HIGH-VALUE",
+		"before": null,
+		"after": {
+			"ruleId": "R-HIGH-VALUE",
+			"severity": "high",
+			"title": "High-value shipment requires manager review"
+		},
+		"actor": "system",
+		"createdAt": "2026-07-08T08:05:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-c93e9d2ab7e5",
+		"caseId": "019f46a7-2229-7029-8f25-432cef10bed3",
+		"action": "task_reassigned",
+		"entityType": "task",
+		"entityId": "019f46a7-2229-7029-8f25-6d735fd8dd9e",
+		"summary": "Task reassigned to management team, in progress",
+		"before": {
+			"status": "open"
+		},
+		"after": {
+			"status": "in_progress"
+		},
+		"actor": "management_bot",
+		"createdAt": "2026-07-09T10:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-cce75dd02da5",
+		"caseId": "019f46a7-2229-7029-8f25-47f4f5075cad",
+		"action": "case_created",
+		"entityType": "case",
+		"entityId": "019f46a7-2229-7029-8f25-47f4f5075cad",
+		"summary": "Case REV-2026-0204 created",
+		"before": null,
+		"after": {
+			"caseReference": "REV-2026-0204",
+			"status": "open",
+			"riskLevel": "low"
+		},
+		"actor": "alice",
+		"createdAt": "2026-06-20T08:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-d25808e7e4df",
+		"caseId": "019f46a7-2229-7029-8f25-47f4f5075cad",
+		"action": "escalation_created",
+		"entityType": "escalation",
+		"entityId": "019f46a7-2229-7029-8f25-9727cd7dd4f9",
+		"summary": "Escalation 'Review deadline passed' created (severity critical), superseded prior 48h escalation",
+		"before": {
+			"type": "deadline",
+			"severity": "high",
+			"status": "active"
+		},
+		"after": {
+			"type": "deadline",
+			"severity": "critical",
+			"status": "active"
+		},
+		"actor": "system",
+		"createdAt": "2026-06-24T09:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-d7257aa64289",
+		"caseId": "019f46a7-2229-7029-8f25-4e3b95e908b3",
+		"action": "case_created",
+		"entityType": "case",
+		"entityId": "019f46a7-2229-7029-8f25-4e3b95e908b3",
+		"summary": "Case REV-2026-0206 created",
+		"before": null,
+		"after": {
+			"caseReference": "REV-2026-0206",
+			"status": "open",
+			"riskLevel": "low"
+		},
+		"actor": "alice",
+		"createdAt": "2026-07-04T08:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-d8cb73b173e9",
+		"caseId": "019f46a7-2229-7029-8f25-50d22af2430b",
+		"action": "case_created",
+		"entityType": "case",
+		"entityId": "019f46a7-2229-7029-8f25-50d22af2430b",
+		"summary": "Case REV-2026-0207 created",
+		"before": null,
+		"after": {
+			"caseReference": "REV-2026-0207",
+			"status": "open",
+			"riskLevel": "low"
+		},
+		"actor": "alice",
+		"createdAt": "2026-06-15T08:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-dc42dca25132",
+		"caseId": "019f46a7-2229-7029-8f25-50d22af2430b",
+		"action": "task_completed",
+		"entityType": "task",
+		"entityId": "019f46a7-2229-7029-8f25-7a352aff7a99",
+		"summary": "Task 'Missing commercial invoice' completed by carol",
+		"before": {
+			"status": "open"
+		},
+		"after": {
+			"status": "completed"
+		},
+		"actor": "carol",
+		"createdAt": "2026-06-20T14:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-e363427f40b9",
+		"caseId": "019f46a7-2229-7029-8f25-50d22af2430b",
+		"action": "case_updated",
+		"entityType": "case",
+		"entityId": "019f46a7-2229-7029-8f25-50d22af2430b",
+		"summary": "Case REV-2026-0207 marked completed — all tasks resolved, no active escalation",
+		"before": {
+			"status": "in_review"
+		},
+		"after": {
+			"status": "completed"
+		},
+		"actor": "carol",
+		"createdAt": "2026-06-21T16:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-e46e534a27a5",
+		"caseId": "019f46a7-2229-7029-8f25-5555c5a7d53f",
+		"action": "case_created",
+		"entityType": "case",
+		"entityId": "019f46a7-2229-7029-8f25-5555c5a7d53f",
+		"summary": "Case REV-2026-0208 created",
+		"before": null,
+		"after": {
+			"caseReference": "REV-2026-0208",
+			"status": "open",
+			"riskLevel": "low"
+		},
+		"actor": "alice",
+		"createdAt": "2026-06-25T08:00:00.000Z"
+	},
+	{
+		"id": "019f46a7-2229-7029-8f25-eb249e24ec88",
+		"caseId": "019f46a7-2229-7029-8f25-5555c5a7d53f",
+		"action": "case_updated",
+		"entityType": "case",
+		"entityId": "019f46a7-2229-7029-8f25-5555c5a7d53f",
+		"summary": "Case REV-2026-0208 completed by alice — all review tasks resolved; active escalations closed",
+		"before": {
+			"status": "open"
+		},
+		"after": {
+			"status": "completed"
+		},
+		"actor": "alice",
+		"createdAt": "2026-06-27T10:00:00.000Z"
+	}
+]

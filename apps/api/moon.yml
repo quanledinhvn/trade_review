@@ -1,0 +1,40 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'typescript'
+layer: 'application'
+
+tasks:
+  dev:
+    command: 'nest start --watch'
+    options:
+      persistent: true
+      cache: false
+    deps:
+      - '^:build'
+
+  build:
+    command: 'nest build'
+    inputs:
+      - 'src/**/*'
+      - 'tsconfig.json'
+      - 'tsconfig.build.json'
+      - 'nest-cli.json'
+    outputs:
+      - 'dist'
+    deps:
+      - '^:build'
+
+  start:
+    command: 'node dist/main.js'
+    options:
+      cache: false
+    deps:
+      - '~:build'
+
+  typecheck:
+    command: 'tsc -p tsconfig.json --noEmit'
+    inputs:
+      - 'src/**/*'
+      - 'tsconfig.json'
+    deps:
+      - '^:build'

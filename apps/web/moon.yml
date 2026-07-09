@@ -1,0 +1,41 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'typescript'
+layer: 'application'
+
+tasks:
+  dev:
+    command: 'vite'
+    options:
+      persistent: true
+      cache: false
+    deps:
+      - '^:build'
+
+  build:
+    command: 'vite build'
+    inputs:
+      - 'src/**/*'
+      - 'index.html'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+    outputs:
+      - 'dist'
+    deps:
+      - '^:build'
+
+  preview:
+    command: 'vite preview'
+    options:
+      persistent: true
+      cache: false
+    deps:
+      - '~:build'
+
+  typecheck:
+    command: 'tsc -p tsconfig.json --noEmit'
+    inputs:
+      - 'src/**/*'
+      - 'tsconfig.json'
+    deps:
+      - '^:build'

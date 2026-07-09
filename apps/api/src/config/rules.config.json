@@ -1,0 +1,119 @@
+[
+	{
+		"ruleId": "R-DOC-INVOICE",
+		"version": 1,
+		"enabled": true,
+		"reason": "commercial_invoice is required but not completed",
+		"when": {
+			"trigger": "missing_document",
+			"params": { "documentType": "commercial_invoice" }
+		},
+		"task": {
+			"severity": "critical",
+			"title": "Missing commercial invoice",
+			"description": "The commercial invoice is required for customs valuation but has not been provided. Obtain it from the importer before the review deadline.",
+			"suggestedAction": "Request commercial invoice from importer",
+			"assignedTeam": "trade_operations"
+		}
+	},
+	{
+		"ruleId": "R-DOC-PACKING",
+		"version": 1,
+		"enabled": true,
+		"reason": "packing_list is required but not completed",
+		"when": {
+			"trigger": "missing_document",
+			"params": { "documentType": "packing_list" }
+		},
+		"task": {
+			"severity": "high",
+			"title": "Missing packing list",
+			"description": "The packing list is required to verify the shipment contents but has not been provided. Request it from the shipper.",
+			"suggestedAction": "Request packing list from shipper",
+			"assignedTeam": "trade_operations"
+		}
+	},
+	{
+		"ruleId": "R-DOC-TRANSPORT",
+		"version": 1,
+		"enabled": true,
+		"reason": "transport_document is required but not completed",
+		"when": {
+			"trigger": "missing_document",
+			"params": { "documentType": "transport_document" }
+		},
+		"task": {
+			"severity": "critical",
+			"title": "Missing transport document",
+			"description": "The transport document (Bill of Lading / AWB) is required to take delivery but has not been provided. Contact the freight partner to obtain it.",
+			"suggestedAction": "Request transport document from partner",
+			"assignedTeam": "trade_operations"
+		}
+	},
+	{
+		"ruleId": "R-WOOD-ISPM15",
+		"version": 1,
+		"enabled": true,
+		"reason": "solid-wood packaging without ISPM-15 certification",
+		"when": {
+			"trigger": "wood_uncertified",
+			"params": {}
+		},
+		"task": {
+			"severity": "high",
+			"title": "Wood packaging not ISPM-15 certified",
+			"description": "The shipment uses solid-wood packaging that requires ISPM-15 treatment certification to clear phytosanitary inspection. Obtain the fumigation certificate.",
+			"suggestedAction": "Request ISPM-15 fumigation certificate",
+			"assignedTeam": "trade_operations"
+		}
+	},
+	{
+		"ruleId": "R-HIGH-VALUE",
+		"version": 1,
+		"enabled": true,
+		"reason": "invoice value exceeds manager-review threshold",
+		"when": {
+			"trigger": "high_value",
+			"params": { "threshold": 100000 }
+		},
+		"task": {
+			"severity": "high",
+			"title": "High-value shipment requires manager review",
+			"description": "The invoice value exceeds the manager-review threshold. A manager must review and approve this high-value shipment before clearance.",
+			"suggestedAction": "Manager to review and approve high-value shipment",
+			"assignedTeam": "management"
+		}
+	},
+	{
+		"ruleId": "R-DEADLINE-48H",
+		"version": 1,
+		"enabled": true,
+		"reason": "review deadline is within 48 hours",
+		"when": {
+			"trigger": "deadline_approaching",
+			"params": { "hoursThreshold": 48 }
+		},
+		"escalation": {
+			"type": "deadline",
+			"severity": "high",
+			"reason": "Review deadline within 48 hours",
+			"suggestedAction": "Escalate to shift manager"
+		}
+	},
+	{
+		"ruleId": "R-DEADLINE-PASSED",
+		"version": 1,
+		"enabled": true,
+		"reason": "review deadline has passed",
+		"when": {
+			"trigger": "deadline_passed",
+			"params": {}
+		},
+		"escalation": {
+			"type": "deadline",
+			"severity": "critical",
+			"reason": "Review deadline passed",
+			"suggestedAction": "Immediate manager escalation"
+		}
+	}
+]
