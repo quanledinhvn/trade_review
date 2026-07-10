@@ -9,8 +9,7 @@ export function fetchCaseTasks(
 	caseRef: string,
 	status?: CaseTasksStatusFilter,
 ): Promise<TaskDto[]> {
-	const params =
-		status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : '';
+	const params = status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : '';
 
 	return api.get(`/review-cases/${encodeURIComponent(caseRef)}/tasks${params}`) as Promise<
 		TaskDto[]

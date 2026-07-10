@@ -90,6 +90,18 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 			severity: RISK_LEVEL.HIGH,
 			status: ESCALATION_STATUS.ACTIVE,
 		});
+
+		const statusAudits = await prisma.auditLog.findMany({
+			where: { caseId: created.id, action: AUDIT_ACTION.CASE_UPDATED },
+		});
+
+		expect(statusAudits).toHaveLength(1);
+
+		expect(statusAudits[0]).toMatchObject({
+			action: AUDIT_ACTION.CASE_UPDATED,
+			before: { status: CASE_STATUS.OPEN },
+			after: { status: CASE_STATUS.IN_REVIEW },
+		});
 	});
 
 	it('is idempotent: re-running produces the same 4 tasks + 1 escalation, no duplicate audit rows', async () => {
@@ -139,6 +151,12 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 		});
 
 		expect(rulesExecutedAudits).toHaveLength(2);
+
+		const statusAudits = await prisma.auditLog.findMany({
+			where: { caseId: created.id, action: AUDIT_ACTION.CASE_UPDATED },
+		});
+
+		expect(statusAudits).toHaveLength(1);
 	});
 
 	it('does not fire R-DOC-INVOICE when commercial_invoice is completed, and no tasks when nothing matches', async () => {
@@ -165,6 +183,21 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 		expect(body.escalations).toBe(0);
 
 		expect(body.risk_level).toBe(RISK_LEVEL.LOW);
+
+		const reviewCase = await prisma.reviewCase.findUniqueOrThrow({ where: { id: created.id } });
+
+		expect(reviewCase.status).toBe(CASE_STATUS.COMPLETED);
+
+		const statusAudits = await prisma.auditLog.findMany({
+			where: { caseId: created.id, action: AUDIT_ACTION.CASE_UPDATED },
+		});
+
+		expect(statusAudits).toHaveLength(1);
+
+		expect(statusAudits[0]).toMatchObject({
+			before: { status: CASE_STATUS.OPEN },
+			after: { status: CASE_STATUS.COMPLETED },
+		});
 	});
 
 	it('does not fire R-WOOD-ISPM15 for reconstituted_wood_box (processed wood, ISPM-15 exempt)', async () => {
@@ -195,6 +228,10 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 		const tasks = await prisma.task.findMany({ where: { caseId: created.id } });
 
 		expect(tasks.map((task) => task.ruleId)).not.toContain('R-WOOD-ISPM15');
+
+		const reviewCase = await prisma.reviewCase.findUniqueOrThrow({ where: { id: created.id } });
+
+		expect(reviewCase.status).toBe(CASE_STATUS.COMPLETED);
 	});
 
 	it('returns 404 when the case does not exist', async () => {

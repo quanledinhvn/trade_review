@@ -13,6 +13,7 @@ import {
 	evaluate,
 	ESCALATION_STATUS,
 	loadRulesConfig,
+	resolveCaseStatusAfterRules,
 	RESOLVED_REASON,
 	SEVERITY_RANK,
 	TASK_STATUS,
@@ -120,12 +121,15 @@ export class RuleEngineService {
 			orderBy: { createdAt: 'asc' },
 		});
 
+		const previousStatus = reviewCase.status;
+		const caseStatus = resolveCaseStatusAfterRules(tasks, escalations);
+
 		const riskRollup = await this.reviewCasesService.syncCaseRiskRollup(
 			tx,
 			reviewCase.id,
 			tasks,
 			escalations,
-			{ status: CASE_STATUS.IN_REVIEW },
+			{ status: caseStatus },
 		);
 
 		await this.writeRuleExecutionAudits(tx, reviewCase, {
@@ -136,6 +140,23 @@ export class RuleEngineService {
 			tasks,
 			actorId: actor.actorId,
 		});
+
+		if (caseStatus !== previousStatus) {
+			await this.auditService.auditReviewCase(tx, {
+				action: AUDIT_ACTION.CASE_UPDATED,
+				before: {
+					id: reviewCase.id,
+					caseReference: reviewCase.caseReference,
+					status: previousStatus,
+				},
+				after: {
+					id: reviewCase.id,
+					caseReference: reviewCase.caseReference,
+					status: caseStatus,
+				},
+				actor: actor.actorId,
+			});
+		}
 
 		return { tasks, escalations, riskRollup };
 	}

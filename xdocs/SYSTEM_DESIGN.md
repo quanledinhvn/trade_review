@@ -34,10 +34,6 @@ flowchart LR
     Prisma --> DB
 ```
 
-
-
-
-
 ## 2. Data model (ERD)
 
 ```mermaid
@@ -113,42 +109,38 @@ erDiagram
     }
 ```
 
-
-
 Notes:
 
 - `TASK(case_id, rule_id)` is unique — one task per rule per case, so re-running rules
-never duplicates a task (idempotent).
+  never duplicates a task (idempotent).
 - `ESCALATION` has a partial unique index on `(case_id, type) WHERE status = 'active'` —
-at most one active escalation per type per case.
+  at most one active escalation per type per case.
 - `risk_rank` / `severity_rank` are stored, not computed at query time, so `ORDER BY`
-can use an index instead of sorting in application code.
-
-
+  can use an index instead of sorting in application code.
 
 ## 3. Rule engine flow
 
-**Rule** — one entry in `rules.config.json`. Defines *when* to fire (`when`) and *what* to create (`task` or `escalation`).
+**Rule** — one entry in `rules.config.json`. Defines _when_ to fire (`when`) and _what_ to create (`task` or `escalation`).
 
 ```typescript
 type RuleTrigger =
-  | 'missing_document'
-  | 'wood_uncertified'
-  | 'high_value'
-  | 'deadline_approaching'
-  | 'deadline_passed';
+	| 'missing_document'
+	| 'wood_uncertified'
+	| 'high_value'
+	| 'deadline_approaching'
+	| 'deadline_passed';
 
 interface RuleDefinition {
-  ruleId: string;
-  version: number;
-  enabled: boolean;
-  reason: string;
-  when: {
-    trigger: RuleTrigger;
-    params: Record<string, unknown>;
-  };
-  task?: RuleTaskOutcome;       // task rules — 4 rules
-  escalation?: RuleEscalationOutcome;  // escalation rules — 2 rules
+	ruleId: string;
+	version: number;
+	enabled: boolean;
+	reason: string;
+	when: {
+		trigger: RuleTrigger;
+		params: Record<string, unknown>;
+	};
+	task?: RuleTaskOutcome; // task rules — 4 rules
+	escalation?: RuleEscalationOutcome; // escalation rules — 2 rules
 }
 ```
 
@@ -156,21 +148,21 @@ Example — task rule (`R-DOC-TRANSPORT`):
 
 ```json
 {
-  "ruleId": "R-DOC-TRANSPORT",
-  "version": 1,
-  "enabled": true,
-  "reason": "transport_document is required but not completed",
-  "when": {
-    "trigger": "missing_document",
-    "params": { "documentType": "transport_document" }
-  },
-  "task": {
-    "severity": "critical",
-    "title": "Missing transport document",
-    "description": "The transport document (Bill of Lading / AWB) is required...",
-    "suggestedAction": "Request transport document from partner",
-    "assignedTeam": "trade_operations"
-  }
+	"ruleId": "R-DOC-TRANSPORT",
+	"version": 1,
+	"enabled": true,
+	"reason": "transport_document is required but not completed",
+	"when": {
+		"trigger": "missing_document",
+		"params": { "documentType": "transport_document" }
+	},
+	"task": {
+		"severity": "critical",
+		"title": "Missing transport document",
+		"description": "The transport document (Bill of Lading / AWB) is required...",
+		"suggestedAction": "Request transport document from partner",
+		"assignedTeam": "trade_operations"
+	}
 }
 ```
 
@@ -178,20 +170,20 @@ Example — escalation rule (`R-DEADLINE-48H`):
 
 ```json
 {
-  "ruleId": "R-DEADLINE-48H",
-  "version": 1,
-  "enabled": true,
-  "reason": "review deadline is within 48 hours",
-  "when": {
-    "trigger": "deadline_approaching",
-    "params": { "hoursThreshold": 48 }
-  },
-  "escalation": {
-    "type": "deadline",
-    "severity": "high",
-    "reason": "Review deadline within 48 hours",
-    "suggestedAction": "Escalate to shift manager"
-  }
+	"ruleId": "R-DEADLINE-48H",
+	"version": 1,
+	"enabled": true,
+	"reason": "review deadline is within 48 hours",
+	"when": {
+		"trigger": "deadline_approaching",
+		"params": { "hoursThreshold": 48 }
+	},
+	"escalation": {
+		"type": "deadline",
+		"severity": "high",
+		"reason": "Review deadline within 48 hours",
+		"suggestedAction": "Escalate to shift manager"
+	}
 }
 ```
 
@@ -202,12 +194,16 @@ sequenceDiagram
     participant Op as Operator
     participant Ctrl as ReviewCasesController
     participant Svc as RuleEngineService
+    participant CaseSvc as ReviewCasesService
     participant Dom as evaluate()
     participant DB as Database
 
     Op->>Ctrl: POST /review-cases/:id/run-rules
     Ctrl->>Svc: runRules(id, actor)
-    Svc->>DB: resolveReviewCase (id or case_reference)
+    Svc->>CaseSvc: resolveReviewCase(id)
+    CaseSvc->>DB: find case by id or case_reference
+    DB-->>CaseSvc: ReviewCase
+    CaseSvc-->>Svc: ReviewCase
     alt status = completed
         Svc-->>Ctrl: 409 Conflict
         Ctrl-->>Op: cannot run rules
@@ -220,27 +216,25 @@ sequenceDiagram
         Svc->>DB: $transaction
         Note over Svc,DB: persistNewTasks — skip if (case_id, rule_id) already exists
         Note over Svc,DB: persistEscalationChanges — supersede or insert active
-        Note over Svc,DB: syncCaseRiskRollup — set status in_review, risk_level/risk_rank
+        Note over Svc,DB: resolveCaseStatusAfterRules — in_review if active work, else completed
+        Note over Svc,DB: syncCaseRiskRollup — set status, risk_level/risk_rank
         Note over Svc,DB: writeRuleExecutionAudits — rules_executed, task_created, escalation_*
-        Svc-->>Ctrl: { risk_level, tasks, escalations }
+        Note over Svc,DB: auditReviewCase(case_updated) if status changed
+        Svc-->>Ctrl: { risk_level, tasks: count, escalations: active count }
         Ctrl-->>Op: 200 OK
     end
 ```
 
-
-
-
-
 ### 3.2 Pipeline
 
-**Predicate** — a function that answers one question: *should this rule fire for this case?*
+**Predicate** — a function that answers one question: _should this rule fire for this case?_
 Returns `true` or `false`. No DB access.
 
 ```typescript
 type Predicate = (
-  reviewCase: ReviewCase,
-  params: Record<string, unknown>,  // from rules.config → when.params
-  now?: Date,
+	reviewCase: ReviewCase,
+	params: Record<string, unknown>, // from rules.config → when.params
+	now?: Date,
 ) => boolean;
 ```
 
@@ -273,10 +267,6 @@ flowchart TD
     Apply --> End([End])
 ```
 
-
-
-
-
 ### 3.3 Evaluation
 
 ```mermaid
@@ -296,10 +286,6 @@ flowchart TD
     After[All rules checked] --> Output[RuleResult list]
     Output --> End([End])
 ```
-
-
-
-
 
 ### 3.4 Apply
 
@@ -328,14 +314,9 @@ flowchart TD
     Audit --> End([End])
 ```
 
-
-
-
-
 ### 3.5 Rules
 
 7 rules, keyed by `when.trigger`:
-
 
 | Trigger                | Rules                                                | Outcome                       |
 | ---------------------- | ---------------------------------------------------- | ----------------------------- |
@@ -345,12 +326,7 @@ flowchart TD
 | `deadline_approaching` | within 48h of deadline                               | escalation (high)             |
 | `deadline_passed`      | past deadline                                        | escalation (critical)         |
 
-
-
-
 ## 4. State machines
-
-
 
 ### 4.1 Case status
 
@@ -361,8 +337,6 @@ stateDiagram-v2
     in_review --> completed : all tasks resolved, no active escalation
     completed --> [*]
 ```
-
-
 
 `escalated` is **not** a state — it's derived from `EXISTS(active escalation)` and can be
 true while status is `open` or `in_review`.
@@ -382,8 +356,6 @@ stateDiagram-v2
     cancelled --> [*]
 ```
 
-
-
 Completing a task with a `document_type` also appends it to the case's
 `completed_documents`, so a later `run-rules` call won't recreate the same task.
 
@@ -397,20 +369,8 @@ stateDiagram-v2
     resolved --> [*]
 ```
 
-
-
 Only one `active` escalation per `type` per case at a time. When `deadline_passed` fires
 while a `deadline_approaching` escalation is still active, the old row is resolved with
 `resolved_reason = "superseded"` and a new `active` row is inserted — history is never
 overwritten, only appended.
 
-## 5. Risk roll-up
-
-`RiskLevel` (case-wide) = highest `Severity` among the case's active tasks + active
-escalations, using the shared rank:
-
-```
-critical = 40, high = 30, medium = 20, low = 10
-```
-
-If no active tasks/escalations remain, `risk_level` falls back to `low`.

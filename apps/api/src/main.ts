@@ -5,6 +5,7 @@ import { NestFactory } from '@nestjs/core';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
 import { AppBadRequestException } from './common/exceptions/exception';
+import { setupSwagger } from './common/openapi/swagger';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -23,6 +24,8 @@ async function bootstrap() {
 			exceptionFactory: (errors) => AppBadRequestException.fromValidationErrors(errors),
 		}),
 	);
+
+	setupSwagger(app);
 
 	const configService = app.get(ConfigService);
 	const port = configService.getOrThrow<number>('app.port');
