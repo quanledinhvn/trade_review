@@ -12,6 +12,7 @@ levels, review tasks, escalation, work queue, audit log.
 
 - **Web UI:** [trade-review-web-omega.vercel.app/work-queue](https://trade-review-web-omega.vercel.app/work-queue)
 - **API:** [p01--tradereview--gcjg8dny5mt5.code.run/api](https://p01--tradereview--gcjg8dny5mt5.code.run/api) — health check: [`/api/health`](https://p01--tradereview--gcjg8dny5mt5.code.run/api/health)
+- **Demo video:** [youtu.be/z3wOD8WBU2I](https://youtu.be/z3wOD8WBU2I)
 
 ## Stack
 
