@@ -98,6 +98,8 @@ export type WorkQueueResponse = Paginated<CaseViewDto>;
 
 export type ReviewCasesStatusFilter = 'all' | CaseStatus | 'cancelled';
 
+export type CaseTasksStatusFilter = 'all' | TaskStatus;
+
 export interface ReviewCaseListItemDto {
 	case_reference: string;
 	shipment_reference: string;

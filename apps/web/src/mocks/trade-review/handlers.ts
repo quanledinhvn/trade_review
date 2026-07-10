@@ -127,7 +127,7 @@ export const tradeReviewHandlers = [
 		});
 	}),
 
-	http.get(`${BASE}/review-cases/:caseRef/tasks`, ({ params }) => {
+	http.get(`${BASE}/review-cases/:caseRef/tasks`, ({ params, request }) => {
 		const caseRef = String(params.caseRef);
 		const caseItem = findCaseByReference(caseRef);
 
@@ -138,7 +138,11 @@ export const tradeReviewHandlers = [
 			);
 		}
 
-		return HttpResponse.json(caseItem.open_tasks ?? []);
+		const status = new URL(request.url).searchParams.get('status');
+		const tasks = caseItem.open_tasks ?? [];
+		const filtered = status ? tasks.filter((task) => task.status === status) : tasks;
+
+		return HttpResponse.json(filtered);
 	}),
 
 	http.get(`${BASE}/review-cases/:caseRef/tasks/:taskId`, ({ params }) => {

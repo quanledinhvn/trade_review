@@ -1,12 +1,16 @@
 import { api } from '@/lib/api';
-import type { ReviewCaseDetail, RunRulesResponse, TaskDto } from '../types';
+import type { CaseTasksStatusFilter, ReviewCaseDetail, RunRulesResponse, TaskDto } from '../types';
 
 export function fetchReviewCase(caseRef: string): Promise<ReviewCaseDetail> {
 	return api.get(`/review-cases/${encodeURIComponent(caseRef)}`) as Promise<ReviewCaseDetail>;
 }
 
-export function fetchCaseTasks(caseRef: string, status?: string): Promise<TaskDto[]> {
-	const params = status ? `?status=${encodeURIComponent(status)}` : '';
+export function fetchCaseTasks(
+	caseRef: string,
+	status?: CaseTasksStatusFilter,
+): Promise<TaskDto[]> {
+	const params =
+		status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : '';
 
 	return api.get(`/review-cases/${encodeURIComponent(caseRef)}/tasks${params}`) as Promise<
 		TaskDto[]

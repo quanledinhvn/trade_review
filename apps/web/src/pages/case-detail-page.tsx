@@ -3,6 +3,13 @@ import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import axios from 'axios';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 import { fetchCaseTasks, fetchReviewCase, runCaseRules } from '../api/case-detail.api';
 import { CaseTaskRow } from '../components/case-task-row';
 import { DocumentChecklist } from '../components/document-checklist';
@@ -10,7 +17,7 @@ import { EscalationRow } from '../components/escalation-row';
 import { SeverityBadge } from '../components/severity-badge';
 import { StatusBadge } from '../components/status-badge';
 import { useTradeReviewRefreshStore } from '../stores/session.store';
-import type { CaseDetailFrom, ReviewCaseDetail, TaskDto } from '../types';
+import type { CaseDetailFrom, CaseTasksStatusFilter, ReviewCaseDetail, TaskDto } from '../types';
 import { formatDeadlineRemaining } from '../utils/format-deadline';
 
 const BACK_LABELS: Record<CaseDetailFrom, string> = {
@@ -22,6 +29,23 @@ const BACK_ROUTES: Record<CaseDetailFrom, '/work-queue' | '/review-cases'> = {
 	'work-queue': '/work-queue',
 	'review-cases': '/review-cases',
 };
+
+const TASK_STATUS_OPTIONS: Array<{ value: CaseTasksStatusFilter; label: string }> = [
+	{ value: 'all', label: 'Status: All' },
+	{ value: 'open', label: 'Open' },
+	{ value: 'in_progress', label: 'In progress' },
+	{ value: 'blocked', label: 'Blocked' },
+	{ value: 'completed', label: 'Completed' },
+	{ value: 'cancelled', label: 'Cancelled' },
+];
+
+function formatTaskStatusLabel(status: CaseTasksStatusFilter): string {
+	if (status === 'all') {
+		return 'tasks';
+	}
+
+	return status.replace(/_/g, ' ');
+}
 
 function formatPackagingLabel(packagingType: string): string {
 	return packagingType.replace(/_/g, ' ');
@@ -39,10 +63,10 @@ function getRunRulesErrorMessage(error: unknown): string {
 	return 'Failed to run rules. Please try again.';
 }
 
-async function loadCaseData(caseRef: string) {
+async function loadCaseData(caseRef: string, taskStatus: CaseTasksStatusFilter) {
 	const [caseResponse, tasks] = await Promise.all([
 		fetchReviewCase(caseRef),
-		fetchCaseTasks(caseRef, 'open'),
+		fetchCaseTasks(caseRef, taskStatus),
 	]);
 
 	return {
@@ -63,14 +87,24 @@ export function CaseDetailPage() {
 
 	const [caseDetail, setCaseDetail] = useState<ReviewCaseDetail | null>(null);
 	const [tasks, setTasks] = useState<TaskDto[]>([]);
+	const [taskStatus, setTaskStatus] = useState<CaseTasksStatusFilter>('open');
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [actionError, setActionError] = useState<string | null>(null);
 	const [isRunningRules, setIsRunningRules] = useState(false);
 	const [trackedCaseRef, setTrackedCaseRef] = useState(caseRef);
+	const [trackedTaskStatus, setTrackedTaskStatus] = useState(taskStatus);
 
 	if (trackedCaseRef !== caseRef) {
 		setTrackedCaseRef(caseRef);
+
+		setIsLoading(true);
+
+		setError(null);
+	}
+
+	if (trackedTaskStatus !== taskStatus) {
+		setTrackedTaskStatus(taskStatus);
 
 		setIsLoading(true);
 
@@ -86,7 +120,7 @@ export function CaseDetailPage() {
 	useEffect(() => {
 		let cancelled = false;
 
-		loadCaseData(caseRef)
+		loadCaseData(caseRef, taskStatus)
 			.then(({ caseResponse, tasks }) => {
 				if (!cancelled) {
 					applyCaseData(caseResponse, tasks);
@@ -110,7 +144,7 @@ export function CaseDetailPage() {
 		return () => {
 			cancelled = true;
 		};
-	}, [caseRef]);
+	}, [caseRef, taskStatus]);
 
 	const handleBack = () => {
 		void navigate({ to: BACK_ROUTES[backFrom] });
@@ -119,7 +153,7 @@ export function CaseDetailPage() {
 	const handleMutationSuccess = () => {
 		notifyTradeReviewMutated();
 
-		void loadCaseData(caseRef)
+		void loadCaseData(caseRef, taskStatus)
 			.then(({ caseResponse, tasks }) => applyCaseData(caseResponse, tasks))
 			.catch(() => setError('Failed to load case detail.'));
 	};
@@ -289,14 +323,35 @@ export function CaseDetailPage() {
 			</div>
 
 			<div className="overflow-hidden rounded-lg border bg-card shadow-sm">
-				<div className="flex items-center justify-between border-b px-6 py-4">
+				<div className="flex flex-wrap items-center justify-between gap-3 border-b px-6 py-4">
 					<h3 className="font-semibold">Tasks</h3>
-					<span className="text-sm text-muted-foreground">{tasks.length} open</span>
+					<div className="flex flex-wrap items-center gap-3">
+						<Select
+							value={taskStatus}
+							onValueChange={(value) => setTaskStatus(value as CaseTasksStatusFilter)}
+						>
+							<SelectTrigger className="h-9 w-[160px]">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{TASK_STATUS_OPTIONS.map((option) => (
+									<SelectItem key={option.value} value={option.value}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<span className="text-sm text-muted-foreground">
+							{tasks.length} {formatTaskStatusLabel(taskStatus)}
+						</span>
+					</div>
 				</div>
 				{tasks.length ? (
 					tasks.map((task) => <CaseTaskRow key={task.id} caseRef={caseRef} task={task} />)
 				) : (
-					<p className="px-6 py-4 text-sm text-muted-foreground">No open tasks.</p>
+					<p className="px-6 py-4 text-sm text-muted-foreground">
+						No {taskStatus === 'all' ? '' : `${formatTaskStatusLabel(taskStatus)} `}tasks.
+					</p>
 				)}
 			</div>
 		</div>
