@@ -2,15 +2,15 @@ import {
 	computeRiskRollup,
 	deadlineApproachingPredicate,
 	deadlinePassedPredicate,
-	evaluate,
 	highValuePredicate,
+	matchRules,
 	missingDocumentPredicate,
 	missingDocuments,
 	woodUncertifiedPredicate,
 } from './rule-engine';
 import type { RuleDefinition } from './rules-config';
 import type { ReviewCaseLike } from './rule-engine';
-import { RISK_LEVEL, SEVERITY_RANK } from './severity';
+import { SEVERITY_LEVEL, SEVERITY_RANK } from './severity';
 import { TASK_STATUS } from './task-status';
 import { DOCUMENT_TYPE } from './document-type';
 import { ESCALATION_STATUS } from './escalation';
@@ -143,7 +143,7 @@ describe('predicates', () => {
 	});
 });
 
-describe('evaluate', () => {
+describe('matchRules', () => {
 	const rules: RuleDefinition[] = [
 		{
 			ruleId: 'R-DOC-INVOICE',
@@ -155,7 +155,7 @@ describe('evaluate', () => {
 				params: { documentType: DOCUMENT_TYPE.COMMERCIAL_INVOICE },
 			},
 			task: {
-				severity: RISK_LEVEL.CRITICAL,
+				severity: SEVERITY_LEVEL.CRITICAL,
 				title: 'Missing commercial invoice',
 				description: 'desc',
 				suggestedAction: 'action',
@@ -172,7 +172,7 @@ describe('evaluate', () => {
 				params: { documentType: DOCUMENT_TYPE.TRANSPORT_DOCUMENT },
 			},
 			task: {
-				severity: RISK_LEVEL.CRITICAL,
+				severity: SEVERITY_LEVEL.CRITICAL,
 				title: 'Missing transport document',
 				description: 'desc',
 				suggestedAction: 'action',
@@ -189,7 +189,7 @@ describe('evaluate', () => {
 				params: { documentType: DOCUMENT_TYPE.TRANSPORT_DOCUMENT },
 			},
 			task: {
-				severity: RISK_LEVEL.LOW,
+				severity: SEVERITY_LEVEL.LOW,
 				title: 'disabled',
 				description: 'desc',
 				suggestedAction: 'action',
@@ -198,87 +198,93 @@ describe('evaluate', () => {
 		},
 	];
 
-	it('is pure and returns a RuleResult for each matching enabled rule', () => {
+	it('is pure and returns each matching enabled rule', () => {
 		const c = makeCase();
 		const now = new Date('2026-07-09T00:00:00.000Z');
 
-		const results = evaluate(c, rules, now);
+		const matched = matchRules(c, rules, now);
 
-		expect(results.map((r) => r.ruleId)).toEqual(['R-DOC-TRANSPORT']);
+		expect(matched.map((r) => r.ruleId)).toEqual(['R-DOC-TRANSPORT']);
 
-		expect(results[0]).toMatchObject({
+		expect(matched[0]).toMatchObject({
 			ruleId: 'R-DOC-TRANSPORT',
 			reason: 'transport_document is required but not completed',
-			task: { severity: RISK_LEVEL.CRITICAL },
+			task: { severity: SEVERITY_LEVEL.CRITICAL },
 		});
 	});
 
-	it('does not evaluate disabled rules', () => {
+	it('does not return disabled rules', () => {
 		const c = makeCase({ completedDocuments: [] });
-		const results = evaluate(c, rules, new Date());
+		const matched = matchRules(c, rules, new Date());
 
-		expect(results.some((r) => r.ruleId === 'R-DISABLED')).toBe(false);
+		expect(matched.some((r) => r.ruleId === 'R-DISABLED')).toBe(false);
 	});
 });
 
 describe('computeRiskRollup', () => {
 	it('returns the highest severity among active tasks', () => {
 		const rollup = computeRiskRollup([
-			{ severity: RISK_LEVEL.HIGH, status: TASK_STATUS.OPEN },
-			{ severity: RISK_LEVEL.CRITICAL, status: TASK_STATUS.OPEN },
-			{ severity: RISK_LEVEL.MEDIUM, status: TASK_STATUS.OPEN },
+			{ severity: SEVERITY_LEVEL.HIGH, status: TASK_STATUS.OPEN },
+			{ severity: SEVERITY_LEVEL.CRITICAL, status: TASK_STATUS.OPEN },
+			{ severity: SEVERITY_LEVEL.MEDIUM, status: TASK_STATUS.OPEN },
 		]);
 
-		expect(rollup).toEqual({ riskLevel: RISK_LEVEL.CRITICAL, riskRank: SEVERITY_RANK.critical });
+		expect(rollup).toEqual({
+			riskLevel: SEVERITY_LEVEL.CRITICAL,
+			riskRank: SEVERITY_RANK.critical,
+		});
 	});
 
 	it('ignores completed and cancelled tasks', () => {
 		const rollup = computeRiskRollup([
-			{ severity: RISK_LEVEL.CRITICAL, status: TASK_STATUS.COMPLETED },
-			{ severity: RISK_LEVEL.CRITICAL, status: TASK_STATUS.CANCELLED },
-			{ severity: RISK_LEVEL.MEDIUM, status: TASK_STATUS.OPEN },
+			{ severity: SEVERITY_LEVEL.CRITICAL, status: TASK_STATUS.COMPLETED },
+			{ severity: SEVERITY_LEVEL.CRITICAL, status: TASK_STATUS.CANCELLED },
+			{ severity: SEVERITY_LEVEL.MEDIUM, status: TASK_STATUS.OPEN },
 		]);
 
-		expect(rollup).toEqual({ riskLevel: RISK_LEVEL.MEDIUM, riskRank: SEVERITY_RANK.medium });
+		expect(rollup).toEqual({ riskLevel: SEVERITY_LEVEL.MEDIUM, riskRank: SEVERITY_RANK.medium });
 	});
 
 	it('falls back to low when no active tasks or escalations', () => {
 		const rollup = computeRiskRollup([
-			{ severity: RISK_LEVEL.CRITICAL, status: TASK_STATUS.COMPLETED },
+			{ severity: SEVERITY_LEVEL.CRITICAL, status: TASK_STATUS.COMPLETED },
 		]);
 
-		expect(rollup).toEqual({ riskLevel: RISK_LEVEL.LOW, riskRank: SEVERITY_RANK.low });
+		expect(rollup).toEqual({ riskLevel: SEVERITY_LEVEL.LOW, riskRank: SEVERITY_RANK.low });
 	});
 
 	it('falls back to low when given an empty list', () => {
 		const rollup = computeRiskRollup([]);
 
-		expect(rollup).toEqual({ riskLevel: RISK_LEVEL.LOW, riskRank: SEVERITY_RANK.low });
+		expect(rollup).toEqual({ riskLevel: SEVERITY_LEVEL.LOW, riskRank: SEVERITY_RANK.low });
 	});
 
 	it('an active escalation alone (no tasks) drives the risk level', () => {
 		const rollup = computeRiskRollup([
-			{ severity: RISK_LEVEL.HIGH, status: ESCALATION_STATUS.ACTIVE },
+			{ severity: SEVERITY_LEVEL.HIGH, status: ESCALATION_STATUS.ACTIVE },
 		]);
 
-		expect(rollup).toEqual({ riskLevel: RISK_LEVEL.HIGH, riskRank: SEVERITY_RANK.high });
+		expect(rollup).toEqual({ riskLevel: SEVERITY_LEVEL.HIGH, riskRank: SEVERITY_RANK.high });
 	});
 
 	it('an active escalation outranks a lower-severity task', () => {
 		const rollup = computeRiskRollup([
-			{ severity: RISK_LEVEL.MEDIUM, status: TASK_STATUS.OPEN },
-			{ severity: RISK_LEVEL.CRITICAL, status: ESCALATION_STATUS.ACTIVE },
+			{ severity: SEVERITY_LEVEL.MEDIUM, status: TASK_STATUS.OPEN },
+			{ severity: SEVERITY_LEVEL.CRITICAL, status: ESCALATION_STATUS.ACTIVE },
 		]);
 
-		expect(rollup).toEqual({ riskLevel: RISK_LEVEL.CRITICAL, riskRank: SEVERITY_RANK.critical });
+		expect(rollup).toEqual({
+			riskLevel: SEVERITY_LEVEL.CRITICAL,
+			riskRank: SEVERITY_RANK.critical,
+		});
 	});
 
 	it('a resolved escalation does not count', () => {
 		const rollup = computeRiskRollup([
-			{ severity: RISK_LEVEL.MEDIUM, status: TASK_STATUS.OPEN },
-			{ severity: RISK_LEVEL.CRITICAL, status: ESCALATION_STATUS.RESOLVED },
+			{ severity: SEVERITY_LEVEL.MEDIUM, status: TASK_STATUS.OPEN },
+			{ severity: SEVERITY_LEVEL.CRITICAL, status: ESCALATION_STATUS.RESOLVED },
 		]);
 
-		expect(rollup).toEqual({ riskLevel: RISK_LEVEL.MEDIUM, riskRank: SEVERITY_RANK.medium });
+		expect(rollup).toEqual({ riskLevel: SEVERITY_LEVEL.MEDIUM, riskRank: SEVERITY_RANK.medium });
 	});
 });

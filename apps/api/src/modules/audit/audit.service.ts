@@ -9,17 +9,17 @@ type TransactionClient = Prisma.TransactionClient;
 
 type Json = Prisma.InputJsonValue;
 
-type TaskIdentity = Pick<Task, 'id' | 'caseId' | 'title'>;
+type TaskIdentity = Pick<Task, 'id' | 'caseId'>;
 
 type TaskAuditEntity = TaskIdentity & Partial<Omit<Task, keyof TaskIdentity>>;
 
 type CaseIdentity = Pick<ReviewCase, 'id' | 'caseReference'>;
 
-type CaseAuditEntity = CaseIdentity & Partial<Omit<ReviewCase, keyof CaseIdentity>>;
+export type CaseAuditEntity = CaseIdentity & Partial<Omit<ReviewCase, keyof CaseIdentity>>;
 
-type EscalationIdentity = Pick<Escalation, 'id' | 'caseId' | 'ruleId' | 'severity'>;
+type EscalationIdentity = Pick<Escalation, 'id' | 'caseId'>;
 
-type EscalationAuditEntity = EscalationIdentity &
+export type EscalationAuditEntity = EscalationIdentity &
 	Partial<Omit<Escalation, keyof EscalationIdentity>>;
 
 export type AuditTaskInput = {
@@ -48,14 +48,13 @@ export type AuditReviewCaseInput = {
 export type AuditEscalationInput = {
 	action:
 		| typeof AUDIT_ACTION.ESCALATION_CREATED
-		| typeof AUDIT_ACTION.ESCALATION_SUPERSEDED
 		| typeof AUDIT_ACTION.ESCALATION_RESOLVED;
 	before?: EscalationAuditEntity;
 	after: EscalationAuditEntity;
 	actor: string;
 };
 
-interface AuditLogEntry {
+export interface AuditLogEntry {
 	caseId: string;
 	action: string;
 	entityType: string;
@@ -72,13 +71,41 @@ export class AuditService {
 		await tx.auditLog.create({ data: { id: uuidv7(), ...entry } });
 	}
 
+	/** Persist several audit entries in one round-trip. Ignores nulls. */
+	async auditMany(
+		tx: TransactionClient,
+		entries: ReadonlyArray<AuditLogEntry | null>,
+	): Promise<void> {
+		const rows = entries.filter((entry): entry is AuditLogEntry => entry !== null);
+
+		if (rows.length === 0) {
+			return;
+		}
+
+		await tx.auditLog.createMany({
+			data: rows.map((entry) => ({ id: uuidv7(), ...entry })),
+		});
+	}
+
 	async auditTask(tx: TransactionClient, input: AuditTaskInput): Promise<void> {
-		const { after, before } = input;
+		await this.write(tx, this.buildTaskEntry(input));
+	}
+
+	async auditReviewCase(tx: TransactionClient, input: AuditReviewCaseInput): Promise<void> {
+		await this.write(tx, this.buildReviewCaseEntry(input));
+	}
+
+	async auditEscalation(tx: TransactionClient, input: AuditEscalationInput): Promise<void> {
+		await this.write(tx, this.buildEscalationEntry(input));
+	}
+
+	buildTaskEntry(input: AuditTaskInput): AuditLogEntry {
+		const { after, before, actor } = input;
 		const { caseId, id: entityId } = after;
 
 		switch (input.action) {
 			case AUDIT_ACTION.TASK_CREATED:
-				await this.write(tx, {
+				return {
 					caseId,
 					action: input.action,
 					entityType: AUDIT_ENTITY_TYPE.TASK,
@@ -89,13 +116,11 @@ export class AuditService {
 						severity: after.severity,
 						title: after.title,
 					},
-					actor: input.actor,
-				});
-
-				return;
+					actor,
+				};
 
 			case AUDIT_ACTION.TASK_COMPLETED:
-				await this.write(tx, {
+				return {
 					caseId,
 					action: input.action,
 					entityType: AUDIT_ENTITY_TYPE.TASK,
@@ -105,15 +130,13 @@ export class AuditService {
 					after: {
 						status: after.status,
 						resolution_comment: after.resolutionComment ?? null,
-						...(input.documentCompleted ? { document_completed: input.documentCompleted } : {}),
+						document_completed: input.documentCompleted,
 					},
-					actor: input.actor,
-				});
-
-				return;
+					actor,
+				};
 
 			case AUDIT_ACTION.TASK_REASSIGNED:
-				await this.write(tx, {
+				return {
 					caseId,
 					action: input.action,
 					entityType: AUDIT_ENTITY_TYPE.TASK,
@@ -127,18 +150,18 @@ export class AuditService {
 						assigned_team: after.assignedTeam,
 						assigned_user: after.assignedUser ?? null,
 					},
-					actor: input.actor,
-				});
+					actor,
+				};
 		}
 	}
 
-	async auditReviewCase(tx: TransactionClient, input: AuditReviewCaseInput): Promise<void> {
+	buildReviewCaseEntry(input: AuditReviewCaseInput): AuditLogEntry {
 		const { after, before } = input;
 		const { id: caseId } = after;
 
 		switch (input.action) {
 			case AUDIT_ACTION.CASE_CREATED:
-				await this.write(tx, {
+				return {
 					caseId,
 					action: input.action,
 					entityType: AUDIT_ENTITY_TYPE.CASE,
@@ -150,47 +173,23 @@ export class AuditService {
 						risk_level: after.riskLevel,
 					},
 					actor: input.actor,
-				});
-
-				return;
+				};
 
 			case AUDIT_ACTION.CASE_UPDATED: {
-				const beforeJson: Json = {};
-				const afterJson: Json = {};
-				const parts: string[] = [];
-
-				if (before?.status !== undefined && after.status !== undefined) {
-					(beforeJson as Record<string, unknown>).status = before.status;
-
-					(afterJson as Record<string, unknown>).status = after.status;
-
-					parts.push(`status ${before.status} -> ${after.status}`);
-				}
-
-				if (before?.riskLevel !== undefined && after.riskLevel !== undefined) {
-					(beforeJson as Record<string, unknown>).risk_level = before.riskLevel;
-
-					(afterJson as Record<string, unknown>).risk_level = after.riskLevel;
-
-					parts.push(`risk_level ${before.riskLevel} -> ${after.riskLevel}`);
-				}
-
-				await this.write(tx, {
+				return {
 					caseId,
 					action: input.action,
 					entityType: AUDIT_ENTITY_TYPE.CASE,
 					entityId: caseId,
-					summary: `Case ${after.caseReference} updated${parts.length ? `: ${parts.join(', ')}` : ''}`,
-					before: Object.keys(beforeJson as object).length > 0 ? beforeJson : undefined,
-					after: afterJson,
+					summary: `Case ${after.caseReference} updated`,
+					before: { status: before?.status, risk_level: before?.riskLevel },
+					after: { status: after.status, risk_level: after.riskLevel },
 					actor: input.actor,
-				});
-
-				return;
+				};
 			}
 
 			case AUDIT_ACTION.RULES_EXECUTED:
-				await this.write(tx, {
+				return {
 					caseId,
 					action: input.action,
 					entityType: AUDIT_ENTITY_TYPE.CASE,
@@ -202,16 +201,16 @@ export class AuditService {
 						risk_level: after.riskLevel,
 					},
 					actor: input.actor,
-				});
+				};
 		}
 	}
 
-	async auditEscalation(tx: TransactionClient, input: AuditEscalationInput): Promise<void> {
-		const { after, before } = input;
+	buildEscalationEntry(input: AuditEscalationInput): AuditLogEntry {
+		const { after, before, actor } = input;
 
 		switch (input.action) {
 			case AUDIT_ACTION.ESCALATION_RESOLVED:
-				await this.write(tx, {
+				return {
 					caseId: after.caseId,
 					action: input.action,
 					entityType: AUDIT_ENTITY_TYPE.ESCALATION,
@@ -220,34 +219,13 @@ export class AuditService {
 					before: { status: before?.status },
 					after: {
 						status: after.status,
-						rule_id: after.ruleId,
-						severity: after.severity,
-						resolved_reason: after.resolvedReason,
+						resolved_reason: after.resolvedReason ?? null,
 					},
-					actor: input.actor,
-				});
-
-				return;
-
-			case AUDIT_ACTION.ESCALATION_SUPERSEDED:
-				await this.write(tx, {
-					caseId: after.caseId,
-					action: input.action,
-					entityType: AUDIT_ENTITY_TYPE.ESCALATION,
-					entityId: after.id,
-					summary: `Escalation superseded for rule ${after.ruleId}`,
-					after: {
-						rule_id: after.ruleId,
-						severity: after.severity,
-						...(after.resolvedReason ? { resolved_reason: after.resolvedReason } : {}),
-					},
-					actor: input.actor,
-				});
-
-				return;
+					actor,
+				};
 
 			case AUDIT_ACTION.ESCALATION_CREATED:
-				await this.write(tx, {
+				return {
 					caseId: after.caseId,
 					action: input.action,
 					entityType: AUDIT_ENTITY_TYPE.ESCALATION,
@@ -257,8 +235,8 @@ export class AuditService {
 						rule_id: after.ruleId,
 						severity: after.severity,
 					},
-					actor: input.actor,
-				});
+					actor,
+				};
 		}
 	}
 }

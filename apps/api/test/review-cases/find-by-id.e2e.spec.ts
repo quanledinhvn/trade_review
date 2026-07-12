@@ -1,18 +1,23 @@
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { CASE_STATUS } from '../../src/domain/case-status';
-import { RISK_LEVEL, SEVERITY_RANK } from '../../src/domain/severity';
+import { SEVERITY_LEVEL, SEVERITY_RANK } from '../../src/domain/severity';
+import { ESCALATION_STATUS, ESCALATION_TYPE } from '../../src/domain/escalation';
+import { PrismaService } from '../../src/database/prisma.service';
 import type { ReviewCaseResponseDto } from '../../src/modules/review-cases/dto/review-case-response.dto';
 import type { ErrorDto } from '../../src/common/exceptions/exception';
-import { validCreatePayload, withActorHeaders } from '../utils';
+import { cleanCasePayload, seedInReviewCase, validCreatePayload, withActorHeaders } from '../utils';
 
 describe('GET /api/review-cases/:id (e2e)', () => {
 	let server: Parameters<typeof request>[0];
+	let prisma: PrismaService;
 
 	beforeAll(async () => {
 		const app: INestApplication = global.testContext.app;
 
 		server = app.getHttpServer();
+
+		prisma = app.get(PrismaService);
 	});
 
 	it('returns the full case with time_remaining_hours', async () => {
@@ -32,7 +37,7 @@ describe('GET /api/review-cases/:id (e2e)', () => {
 			case_reference: 'REV-2026-TEST-001',
 			deadline: '2026-07-08',
 			status: CASE_STATUS.OPEN,
-			risk_level: RISK_LEVEL.LOW,
+			risk_level: SEVERITY_LEVEL.LOW,
 			risk_rank: SEVERITY_RANK.low,
 		});
 
@@ -51,5 +56,38 @@ describe('GET /api/review-cases/:id (e2e)', () => {
 		expect(response.status).toBe(HttpStatus.NOT_FOUND);
 
 		expect(body.error.code).toBe('NOT_FOUND');
+	});
+
+	it('includes the escalations array', async () => {
+		const seeded = await seedInReviewCase(
+			prisma,
+			{ case_reference: 'REV-2026-ESC-GET', ...cleanCasePayload },
+			{ deadlineHoursFromNow: 36 },
+		);
+
+		const response = await request(server).get(`/api/review-cases/${seeded.id}`);
+		const body = response.body as ReviewCaseResponseDto & {
+			escalations: Array<Record<string, unknown>>;
+		};
+
+		expect(response.status).toBe(HttpStatus.OK);
+
+		expect(body.escalations).toHaveLength(1);
+
+		expect(body.escalations[0]).toMatchObject({
+			rule_id: 'R-DEADLINE-48H',
+			type: ESCALATION_TYPE.DEADLINE,
+			severity: SEVERITY_LEVEL.HIGH,
+			status: ESCALATION_STATUS.ACTIVE,
+			resolved_reason: null,
+		});
+
+		expect(typeof body.escalations[0]?.id).toBe('string');
+
+		expect(typeof body.escalations[0]?.reason).toBe('string');
+
+		expect(typeof body.escalations[0]?.suggested_action).toBe('string');
+
+		expect(typeof body.escalations[0]?.created_at).toBe('string');
 	});
 });

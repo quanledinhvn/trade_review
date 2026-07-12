@@ -2,15 +2,28 @@ import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AUDIT_ACTION } from '../../src/domain/audit';
 import { CASE_STATUS } from '../../src/domain/case-status';
-import { RISK_LEVEL } from '../../src/domain/severity';
+import { SEVERITY_LEVEL } from '../../src/domain/severity';
 import { TASK_STATUS } from '../../src/domain/task-status';
 import { DOCUMENT_TYPE } from '../../src/domain/document-type';
-import { ESCALATION_STATUS, ESCALATION_TYPE } from '../../src/domain/escalation';
+import { ESCALATION_STATUS, ESCALATION_TYPE, RESOLVED_REASON } from '../../src/domain/escalation';
 import { PACKAGING_TYPE } from '../../src/domain/packaging';
 import type { ErrorDto } from '../../src/common/exceptions/exception';
 import { PrismaService } from '../../src/database/prisma.service';
 import type { RunRulesResponseDto } from '../../src/modules/review-cases/dto/run-rules-response.dto';
-import { canonicalCasePayload, createCase, withActorHeaders } from '../utils';
+import { canonicalCasePayload, cleanCasePayload, createCase, withActorHeaders } from '../utils';
+
+/**
+ * A case with one missing document (a high-severity task) so it stays in_review after run-rules.
+ * Completion is task-driven, so a deadline escalation is only raised while outstanding task work
+ * remains — a lone deadline signal on an otherwise-clean case just completes.
+ */
+const taskCasePayload = {
+	required_documents: [DOCUMENT_TYPE.COMMERCIAL_INVOICE, DOCUMENT_TYPE.PACKING_LIST],
+	completed_documents: [DOCUMENT_TYPE.COMMERCIAL_INVOICE],
+	packaging_type: PACKAGING_TYPE.PLASTIC_BOX,
+	ispm15_certified: true,
+	invoice_value: 500,
+};
 
 describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 	let server: Parameters<typeof request>[0];
@@ -39,14 +52,28 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 
 		expect(response.status).toBe(HttpStatus.OK);
 
-		expect(body.risk_level).toBe(RISK_LEVEL.CRITICAL);
+		expect(body.risk_level).toBe(SEVERITY_LEVEL.CRITICAL);
 
-		expect(body.tasks).toBe(4);
+		expect(body.results).toHaveLength(5);
 
-		expect(body.escalations).toBe(1);
+		const taskResults = body.results.filter((result) => result.task !== null);
+
+		expect(taskResults).toHaveLength(4);
+
+		const escalationResults = body.results.filter((result) => result.escalation !== null);
+
+		expect(escalationResults).toHaveLength(1);
+
+		expect(escalationResults[0]).toMatchObject({
+			rule_id: 'R-DEADLINE-48H',
+			trigger_reason: 'Review deadline within 48 hours',
+			severity: SEVERITY_LEVEL.HIGH,
+			suggested_action: 'Escalate to shift manager',
+		});
 
 		const reviewCase = await prisma.reviewCase.findUniqueOrThrow({ where: { id: created.id } });
 
+		// active tasks remain, so run-rules transitions the case open -> in_review.
 		expect(reviewCase.status).toBe(CASE_STATUS.IN_REVIEW);
 
 		const tasks = await prisma.task.findMany({ where: { caseId: created.id } });
@@ -64,7 +91,7 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 		const transportTask = tasks.find((task) => task.ruleId === 'R-DOC-TRANSPORT');
 
 		expect(transportTask).toMatchObject({
-			severity: RISK_LEVEL.CRITICAL,
+			severity: SEVERITY_LEVEL.CRITICAL,
 			status: TASK_STATUS.OPEN,
 			suggestedAction: 'Request transport document from partner',
 			assignedTeam: 'trade_operations',
@@ -75,7 +102,7 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 		const highValueTask = tasks.find((task) => task.ruleId === 'R-HIGH-VALUE');
 
 		expect(highValueTask).toMatchObject({
-			severity: RISK_LEVEL.HIGH,
+			severity: SEVERITY_LEVEL.HIGH,
 			assignedTeam: 'management',
 			documentType: null,
 		});
@@ -87,20 +114,39 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 		expect(escalations[0]).toMatchObject({
 			ruleId: 'R-DEADLINE-48H',
 			type: ESCALATION_TYPE.DEADLINE,
-			severity: RISK_LEVEL.HIGH,
+			severity: SEVERITY_LEVEL.HIGH,
 			status: ESCALATION_STATUS.ACTIVE,
 		});
 
+		// run-rules folds the case change into a single RULES_EXECUTED audit; it never writes CASE_UPDATED.
 		const statusAudits = await prisma.auditLog.findMany({
 			where: { caseId: created.id, action: AUDIT_ACTION.CASE_UPDATED },
 		});
 
-		expect(statusAudits).toHaveLength(1);
+		expect(statusAudits).toHaveLength(0);
 
-		expect(statusAudits[0]).toMatchObject({
-			action: AUDIT_ACTION.CASE_UPDATED,
-			before: { status: CASE_STATUS.OPEN },
-			after: { status: CASE_STATUS.IN_REVIEW },
+		const rulesExecutedAudits = await prisma.auditLog.findMany({
+			where: { caseId: created.id, action: AUDIT_ACTION.RULES_EXECUTED },
+		});
+
+		expect(rulesExecutedAudits).toHaveLength(1);
+
+		expect(rulesExecutedAudits[0]?.after).toMatchObject({
+			matched_rules: expect.arrayContaining([
+				'R-DOC-PACKING',
+				'R-DOC-TRANSPORT',
+				'R-WOOD-ISPM15',
+				'R-HIGH-VALUE',
+				'R-DEADLINE-48H',
+			]),
+			created_rule_ids: expect.arrayContaining([
+				'R-DOC-PACKING',
+				'R-DOC-TRANSPORT',
+				'R-WOOD-ISPM15',
+				'R-HIGH-VALUE',
+				'R-DEADLINE-48H',
+			]),
+			risk_level: SEVERITY_LEVEL.CRITICAL,
 		});
 	});
 
@@ -120,11 +166,9 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 
 		expect(second.status).toBe(HttpStatus.OK);
 
-		expect(body.tasks).toBe(4);
+		expect(body.results).toHaveLength(0);
 
-		expect(body.escalations).toBe(1);
-
-		expect(body.risk_level).toBe(RISK_LEVEL.CRITICAL);
+		expect(body.risk_level).toBe(SEVERITY_LEVEL.CRITICAL);
 
 		const tasks = await prisma.task.findMany({ where: { caseId: created.id } });
 
@@ -156,7 +200,7 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 			where: { caseId: created.id, action: AUDIT_ACTION.CASE_UPDATED },
 		});
 
-		expect(statusAudits).toHaveLength(1);
+		expect(statusAudits).toHaveLength(0);
 	});
 
 	it('does not fire R-DOC-INVOICE when commercial_invoice is completed, and no tasks when nothing matches', async () => {
@@ -178,25 +222,31 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 
 		expect(response.status).toBe(HttpStatus.OK);
 
-		expect(body.tasks).toBe(0);
+		expect(body.results).toHaveLength(0);
 
-		expect(body.escalations).toBe(0);
-
-		expect(body.risk_level).toBe(RISK_LEVEL.LOW);
+		expect(body.risk_level).toBe(SEVERITY_LEVEL.LOW);
 
 		const reviewCase = await prisma.reviewCase.findUniqueOrThrow({ where: { id: created.id } });
 
 		expect(reviewCase.status).toBe(CASE_STATUS.COMPLETED);
 
+		// Completion is recorded only via RULES_EXECUTED; run-rules never writes CASE_UPDATED.
 		const statusAudits = await prisma.auditLog.findMany({
 			where: { caseId: created.id, action: AUDIT_ACTION.CASE_UPDATED },
 		});
 
-		expect(statusAudits).toHaveLength(1);
+		expect(statusAudits).toHaveLength(0);
 
-		expect(statusAudits[0]).toMatchObject({
-			before: { status: CASE_STATUS.OPEN },
-			after: { status: CASE_STATUS.COMPLETED },
+		const rulesExecutedAudits = await prisma.auditLog.findMany({
+			where: { caseId: created.id, action: AUDIT_ACTION.RULES_EXECUTED },
+		});
+
+		expect(rulesExecutedAudits).toHaveLength(1);
+
+		// risk_level stays low (unchanged), so it is not written into the audit after-image.
+		expect(rulesExecutedAudits[0]?.after).toMatchObject({
+			matched_rules: [],
+			created_rule_ids: [],
 		});
 	});
 
@@ -219,11 +269,9 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 
 		expect(response.status).toBe(HttpStatus.OK);
 
-		expect(body.tasks).toBe(0);
+		expect(body.results).toHaveLength(0);
 
-		expect(body.escalations).toBe(0);
-
-		expect(body.risk_level).toBe(RISK_LEVEL.LOW);
+		expect(body.risk_level).toBe(SEVERITY_LEVEL.LOW);
 
 		const tasks = await prisma.task.findMany({ where: { caseId: created.id } });
 
@@ -260,5 +308,188 @@ describe('POST /api/review-cases/:id/run-rules (e2e)', () => {
 		expect(response.status).toBe(HttpStatus.CONFLICT);
 
 		expect(body.error.code).toBe('CONFLICT');
+	});
+
+	it('completes a clean case with no tasks and creates no escalation when deadline is ~36h out', async () => {
+		const created = await createCase(
+			prisma,
+			{ case_reference: 'REV-2026-ESC-48H-CLEAN', ...cleanCasePayload },
+			{ deadlineHoursFromNow: 36 },
+		);
+
+		const response = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
+		const body = response.body as RunRulesResponseDto;
+
+		expect(response.status).toBe(HttpStatus.OK);
+
+		// No task work remains, so the case completes and the deadline escalation is not raised.
+		expect(body.risk_level).toBe(SEVERITY_LEVEL.LOW);
+
+		expect(body.results).toHaveLength(0);
+
+		const escalations = await prisma.escalation.findMany({ where: { caseId: created.id } });
+
+		expect(escalations).toHaveLength(0);
+
+		const reviewCase = await prisma.reviewCase.findUniqueOrThrow({ where: { id: created.id } });
+
+		expect(reviewCase.status).toBe(CASE_STATUS.COMPLETED);
+	});
+
+	it('completes a clean case with no tasks and creates no escalation when deadline is in the past', async () => {
+		const created = await createCase(
+			prisma,
+			{ case_reference: 'REV-2026-ESC-PASSED-CLEAN', ...cleanCasePayload },
+			{ deadlineHoursFromNow: -5 },
+		);
+
+		const response = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
+		const body = response.body as RunRulesResponseDto;
+
+		expect(response.status).toBe(HttpStatus.OK);
+
+		expect(body.risk_level).toBe(SEVERITY_LEVEL.LOW);
+
+		expect(body.results).toHaveLength(0);
+
+		const escalations = await prisma.escalation.findMany({ where: { caseId: created.id } });
+
+		expect(escalations).toHaveLength(0);
+
+		const reviewCase = await prisma.reviewCase.findUniqueOrThrow({ where: { id: created.id } });
+
+		expect(reviewCase.status).toBe(CASE_STATUS.COMPLETED);
+	});
+
+	it('raises an active high-severity R-DEADLINE-48H escalation when a task keeps the case in review (~36h out)', async () => {
+		const created = await createCase(
+			prisma,
+			{ case_reference: 'REV-2026-ESC-48H-ACTIVE', ...taskCasePayload },
+			{ deadlineHoursFromNow: 36 },
+		);
+
+		const response = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
+		const body = response.body as RunRulesResponseDto;
+
+		expect(response.status).toBe(HttpStatus.OK);
+
+		expect(body.risk_level).toBe(SEVERITY_LEVEL.HIGH);
+
+		const escalationResults = body.results.filter((result) => result.escalation !== null);
+
+		expect(escalationResults).toHaveLength(1);
+
+		expect(escalationResults[0]).toMatchObject({
+			rule_id: 'R-DEADLINE-48H',
+			trigger_reason: 'Review deadline within 48 hours',
+			severity: SEVERITY_LEVEL.HIGH,
+			suggested_action: 'Escalate to shift manager',
+		});
+
+		const escalations = await prisma.escalation.findMany({ where: { caseId: created.id } });
+
+		expect(escalations).toHaveLength(1);
+
+		expect(escalations[0]).toMatchObject({
+			ruleId: 'R-DEADLINE-48H',
+			type: ESCALATION_TYPE.DEADLINE,
+			severity: SEVERITY_LEVEL.HIGH,
+			status: ESCALATION_STATUS.ACTIVE,
+		});
+
+		const reviewCase = await prisma.reviewCase.findUniqueOrThrow({ where: { id: created.id } });
+
+		expect(reviewCase.status).toBe(CASE_STATUS.IN_REVIEW);
+	});
+
+	it('raises an active critical R-DEADLINE-PASSED escalation when a task keeps the case in review (past deadline)', async () => {
+		const created = await createCase(
+			prisma,
+			{ case_reference: 'REV-2026-ESC-PASSED-ACTIVE', ...taskCasePayload },
+			{ deadlineHoursFromNow: -5 },
+		);
+
+		const response = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
+		const body = response.body as RunRulesResponseDto;
+
+		expect(response.status).toBe(HttpStatus.OK);
+
+		expect(body.risk_level).toBe(SEVERITY_LEVEL.CRITICAL);
+
+		const escalationResults = body.results.filter((result) => result.escalation !== null);
+
+		expect(escalationResults).toHaveLength(1);
+
+		expect(escalationResults[0]).toMatchObject({
+			rule_id: 'R-DEADLINE-PASSED',
+			trigger_reason: 'Review deadline passed',
+			severity: SEVERITY_LEVEL.CRITICAL,
+			suggested_action: 'Immediate manager escalation',
+		});
+
+		const escalations = await prisma.escalation.findMany({ where: { caseId: created.id } });
+
+		expect(escalations).toHaveLength(1);
+
+		expect(escalations[0]).toMatchObject({
+			ruleId: 'R-DEADLINE-PASSED',
+			type: ESCALATION_TYPE.DEADLINE,
+			severity: SEVERITY_LEVEL.CRITICAL,
+			status: ESCALATION_STATUS.ACTIVE,
+		});
+	});
+
+	it('supersedes the 48h escalation with a passed escalation once the deadline moves into the past', async () => {
+		const created = await createCase(
+			prisma,
+			{ case_reference: 'REV-2026-ESC-SUPERSEDE', ...taskCasePayload },
+			{ deadlineHoursFromNow: 36 },
+		);
+
+		const first = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
+
+		expect((first.body as RunRulesResponseDto).risk_level).toBe(SEVERITY_LEVEL.HIGH);
+
+		await prisma.reviewCase.update({
+			where: { id: created.id },
+			data: { deadline: new Date(Date.now() - 5 * 60 * 60 * 1000) },
+		});
+
+		const second = await withActorHeaders(
+			request(server).post(`/api/review-cases/${created.id}/run-rules`),
+		);
+
+		expect(second.status).toBe(HttpStatus.OK);
+
+		expect((second.body as RunRulesResponseDto).risk_level).toBe(SEVERITY_LEVEL.CRITICAL);
+
+		// The lower-severity 48h escalation is resolved (superseded) and replaced by the critical one.
+		const escalations = await prisma.escalation.findMany({
+			where: { caseId: created.id },
+			orderBy: { createdAt: 'asc' },
+		});
+
+		expect(escalations).toHaveLength(2);
+
+		expect(escalations[0]).toMatchObject({
+			ruleId: 'R-DEADLINE-48H',
+			status: ESCALATION_STATUS.RESOLVED,
+			resolvedReason: RESOLVED_REASON.SUPERSEDED,
+		});
+
+		expect(escalations[1]).toMatchObject({
+			ruleId: 'R-DEADLINE-PASSED',
+			status: ESCALATION_STATUS.ACTIVE,
+		});
 	});
 });

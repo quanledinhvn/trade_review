@@ -118,7 +118,8 @@ Full case plus all escalations (active and resolved). No body.
 
 ## `POST /review-cases/:id/run-rules`
 
-Evaluate rules, create or update tasks and escalations, move case to `in_review`. Idempotent.
+Evaluate rules, create or update tasks and escalations, roll up risk, and move the
+case to `in_review` (or `completed` when no active tasks remain). Idempotent.
 
 **Headers**:
 
@@ -130,10 +131,33 @@ Evaluate rules, create or update tasks and escalations, move case to `in_review`
 **Response** `200`:
 
 ```json
-{ "risk_level": "critical", "tasks": 4, "escalations": 1 }
+{
+	"risk_level": "critical",
+	"results": [
+		{
+			"rule_id": "R-DOC-TRANSPORT",
+			"trigger_reason": "transport_document is required but not completed",
+			"task": { "id": "uuid", "title": "Missing transport document", "severity": "critical" },
+			"escalation": null,
+			"severity": "critical",
+			"suggested_action": "Request transport document from partner"
+		},
+		{
+			"rule_id": "R-DEADLINE-48H",
+			"trigger_reason": "Review deadline within 48 hours",
+			"task": null,
+			"escalation": { "id": "uuid", "type": "deadline", "severity": "high" },
+			"severity": "high",
+			"suggested_action": "Escalate to shift manager"
+		}
+	]
+}
 ```
 
-`tasks` = open tasks after run. `escalations` = active escalations after run.
+`risk_level` = case risk roll-up after the run. `results` = one entry per task/escalation
+newly created this run; each carries the firing `rule_id`, its `trigger_reason`, the
+created `task` or `escalation` (the other is `null`), `severity`, and `suggested_action`.
+An idempotent re-run that creates nothing returns an empty `results` array.
 
 `409` on completed case.
 

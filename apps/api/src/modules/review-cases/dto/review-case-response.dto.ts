@@ -9,7 +9,7 @@ import {
 	type EscalationType,
 } from '../../../domain/escalation';
 import { PACKAGING_TYPE_VALUES, type PackagingType } from '../../../domain/packaging';
-import { RISK_LEVEL, type RiskLevel, type Severity } from '../../../domain/severity';
+import { SEVERITY_LEVEL, type RiskLevel, type Severity } from '../../../domain/severity';
 
 @Exclude()
 export class EscalationDto {
@@ -25,7 +25,7 @@ export class EscalationDto {
 	@Expose()
 	type!: EscalationType;
 
-	@ApiProperty({ enum: Object.values(RISK_LEVEL) })
+	@ApiProperty({ enum: Object.values(SEVERITY_LEVEL) })
 	@Expose()
 	severity!: Severity;
 
@@ -84,7 +84,7 @@ export class ReviewCaseResponseDto {
 	@Expose()
 	status!: CaseStatus;
 
-	@ApiProperty({ enum: Object.values(RISK_LEVEL) })
+	@ApiProperty({ enum: Object.values(SEVERITY_LEVEL) })
 	@Expose()
 	risk_level!: RiskLevel;
 

@@ -18,9 +18,19 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DOC-PACKING",
 			"version": 1,
-			"severity": "high",
-			"title": "Missing packing list",
-			"suggestedAction": "Request packing list from shipper"
+			"enabled": true,
+			"reason": "packing_list is required but not completed",
+			"when": {
+				"trigger": "missing_document",
+				"params": { "documentType": "packing_list" }
+			},
+			"task": {
+				"severity": "high",
+				"title": "Missing packing list",
+				"description": "The packing list is required to verify the shipment contents but has not been provided. Request it from the shipper.",
+				"suggestedAction": "Request packing list from shipper",
+				"assignedTeam": "trade_operations"
+			}
 		},
 		"createdAt": "2026-07-06T12:00:00.000Z",
 		"updatedAt": "2026-07-06T12:00:00.000Z"
@@ -44,9 +54,19 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DOC-TRANSPORT",
 			"version": 1,
-			"severity": "critical",
-			"title": "Missing transport document",
-			"suggestedAction": "Request transport document from partner"
+			"enabled": true,
+			"reason": "transport_document is required but not completed",
+			"when": {
+				"trigger": "missing_document",
+				"params": { "documentType": "transport_document" }
+			},
+			"task": {
+				"severity": "critical",
+				"title": "Missing transport document",
+				"description": "The transport document (Bill of Lading / AWB) is required to take delivery but has not been provided. Contact the freight partner to obtain it.",
+				"suggestedAction": "Request transport document from partner",
+				"assignedTeam": "trade_operations"
+			}
 		},
 		"createdAt": "2026-07-06T12:00:00.000Z",
 		"updatedAt": "2026-07-06T12:00:00.000Z"
@@ -70,9 +90,19 @@
 		"ruleSnapshot": {
 			"ruleId": "R-WOOD-ISPM15",
 			"version": 1,
-			"severity": "high",
-			"title": "Wood packaging not ISPM-15 certified",
-			"suggestedAction": "Request ISPM-15 fumigation certificate"
+			"enabled": true,
+			"reason": "solid-wood packaging without ISPM-15 certification",
+			"when": {
+				"trigger": "wood_uncertified",
+				"params": {}
+			},
+			"task": {
+				"severity": "high",
+				"title": "Wood packaging not ISPM-15 certified",
+				"description": "The shipment uses solid-wood packaging that requires ISPM-15 treatment certification to clear phytosanitary inspection. Obtain the fumigation certificate.",
+				"suggestedAction": "Request ISPM-15 fumigation certificate",
+				"assignedTeam": "trade_operations"
+			}
 		},
 		"createdAt": "2026-07-06T12:00:00.000Z",
 		"updatedAt": "2026-07-06T12:00:00.000Z"
@@ -96,9 +126,19 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DOC-INVOICE",
 			"version": 1,
-			"severity": "critical",
-			"title": "Missing commercial invoice",
-			"suggestedAction": "Request commercial invoice from importer"
+			"enabled": true,
+			"reason": "commercial_invoice is required but not completed",
+			"when": {
+				"trigger": "missing_document",
+				"params": { "documentType": "commercial_invoice" }
+			},
+			"task": {
+				"severity": "critical",
+				"title": "Missing commercial invoice",
+				"description": "The commercial invoice is required for customs valuation but has not been provided. Obtain it from the importer before the review deadline.",
+				"suggestedAction": "Request commercial invoice from importer",
+				"assignedTeam": "trade_operations"
+			}
 		},
 		"createdAt": "2026-07-10T08:00:00.000Z",
 		"updatedAt": "2026-07-10T08:00:00.000Z"
@@ -122,9 +162,19 @@
 		"ruleSnapshot": {
 			"ruleId": "R-HIGH-VALUE",
 			"version": 1,
-			"severity": "high",
-			"title": "High-value shipment requires manager review",
-			"suggestedAction": "Manager to review and approve high-value shipment"
+			"enabled": true,
+			"reason": "invoice value exceeds manager-review threshold",
+			"when": {
+				"trigger": "high_value",
+				"params": { "threshold": 100000 }
+			},
+			"task": {
+				"severity": "high",
+				"title": "High-value shipment requires manager review",
+				"description": "The invoice value exceeds the manager-review threshold. A manager must review and approve this high-value shipment before clearance.",
+				"suggestedAction": "Manager to review and approve high-value shipment",
+				"assignedTeam": "management"
+			}
 		},
 		"createdAt": "2026-07-08T08:00:00.000Z",
 		"updatedAt": "2026-07-09T10:00:00.000Z"
@@ -148,9 +198,19 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DOC-TRANSPORT",
 			"version": 1,
-			"severity": "critical",
-			"title": "Missing transport document",
-			"suggestedAction": "Request transport document from partner"
+			"enabled": true,
+			"reason": "transport_document is required but not completed",
+			"when": {
+				"trigger": "missing_document",
+				"params": { "documentType": "transport_document" }
+			},
+			"task": {
+				"severity": "critical",
+				"title": "Missing transport document",
+				"description": "The transport document (Bill of Lading / AWB) is required to take delivery but has not been provided. Contact the freight partner to obtain it.",
+				"suggestedAction": "Request transport document from partner",
+				"assignedTeam": "trade_operations"
+			}
 		},
 		"createdAt": "2026-06-24T08:00:00.000Z",
 		"updatedAt": "2026-06-26T09:00:00.000Z"
@@ -174,9 +234,19 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DOC-TRANSPORT",
 			"version": 1,
-			"severity": "critical",
-			"title": "Missing transport document",
-			"suggestedAction": "Request transport document from partner"
+			"enabled": true,
+			"reason": "transport_document is required but not completed",
+			"when": {
+				"trigger": "missing_document",
+				"params": { "documentType": "transport_document" }
+			},
+			"task": {
+				"severity": "critical",
+				"title": "Missing transport document",
+				"description": "The transport document (Bill of Lading / AWB) is required to take delivery but has not been provided. Contact the freight partner to obtain it.",
+				"suggestedAction": "Request transport document from partner",
+				"assignedTeam": "trade_operations"
+			}
 		},
 		"createdAt": "2026-07-04T08:00:00.000Z",
 		"updatedAt": "2026-07-04T08:00:00.000Z"
@@ -200,9 +270,19 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DOC-INVOICE",
 			"version": 1,
-			"severity": "critical",
-			"title": "Missing commercial invoice",
-			"suggestedAction": "Request commercial invoice from importer"
+			"enabled": true,
+			"reason": "commercial_invoice is required but not completed",
+			"when": {
+				"trigger": "missing_document",
+				"params": { "documentType": "commercial_invoice" }
+			},
+			"task": {
+				"severity": "critical",
+				"title": "Missing commercial invoice",
+				"description": "The commercial invoice is required for customs valuation but has not been provided. Obtain it from the importer before the review deadline.",
+				"suggestedAction": "Request commercial invoice from importer",
+				"assignedTeam": "trade_operations"
+			}
 		},
 		"createdAt": "2026-06-15T08:00:00.000Z",
 		"updatedAt": "2026-06-20T14:00:00.000Z"
@@ -226,9 +306,19 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DOC-PACKING",
 			"version": 1,
-			"severity": "high",
-			"title": "Missing packing list",
-			"suggestedAction": "Request packing list from shipper"
+			"enabled": true,
+			"reason": "packing_list is required but not completed",
+			"when": {
+				"trigger": "missing_document",
+				"params": { "documentType": "packing_list" }
+			},
+			"task": {
+				"severity": "high",
+				"title": "Missing packing list",
+				"description": "The packing list is required to verify the shipment contents but has not been provided. Request it from the shipper.",
+				"suggestedAction": "Request packing list from shipper",
+				"assignedTeam": "trade_operations"
+			}
 		},
 		"createdAt": "2026-06-25T08:00:00.000Z",
 		"updatedAt": "2026-06-27T10:00:00.000Z"
@@ -251,9 +341,19 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DOC-TRANSPORT",
 			"version": 1,
-			"severity": "critical",
-			"title": "Missing transport document",
-			"suggestedAction": "Request transport document from partner"
+			"enabled": true,
+			"reason": "transport_document is required but not completed",
+			"when": {
+				"trigger": "missing_document",
+				"params": { "documentType": "transport_document" }
+			},
+			"task": {
+				"severity": "critical",
+				"title": "Missing transport document",
+				"description": "The transport document (Bill of Lading / AWB) is required to take delivery but has not been provided. Contact the freight partner to obtain it.",
+				"suggestedAction": "Request transport document from partner",
+				"assignedTeam": "trade_operations"
+			}
 		},
 		"createdAt": "2026-06-25T08:00:00.000Z",
 		"updatedAt": "2026-06-27T10:00:00.000Z"
@@ -277,9 +377,19 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DOC-PACKING",
 			"version": 1,
-			"severity": "high",
-			"title": "Missing packing list",
-			"suggestedAction": "Request packing list from shipper"
+			"enabled": true,
+			"reason": "packing_list is required but not completed",
+			"when": {
+				"trigger": "missing_document",
+				"params": { "documentType": "packing_list" }
+			},
+			"task": {
+				"severity": "high",
+				"title": "Missing packing list",
+				"description": "The packing list is required to verify the shipment contents but has not been provided. Request it from the shipper.",
+				"suggestedAction": "Request packing list from shipper",
+				"assignedTeam": "trade_operations"
+			}
 		},
 		"createdAt": "2026-07-08T09:00:00.000Z",
 		"updatedAt": "2026-07-09T09:00:00.000Z"
@@ -303,9 +413,19 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DOC-TRANSPORT",
 			"version": 1,
-			"severity": "critical",
-			"title": "Missing transport document",
-			"suggestedAction": "Request transport document from partner"
+			"enabled": true,
+			"reason": "transport_document is required but not completed",
+			"when": {
+				"trigger": "missing_document",
+				"params": { "documentType": "transport_document" }
+			},
+			"task": {
+				"severity": "critical",
+				"title": "Missing transport document",
+				"description": "The transport document (Bill of Lading / AWB) is required to take delivery but has not been provided. Contact the freight partner to obtain it.",
+				"suggestedAction": "Request transport document from partner",
+				"assignedTeam": "trade_operations"
+			}
 		},
 		"createdAt": "2026-07-08T09:00:00.000Z",
 		"updatedAt": "2026-07-09T09:00:00.000Z"

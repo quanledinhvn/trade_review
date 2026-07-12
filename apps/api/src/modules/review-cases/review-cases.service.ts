@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, type Escalation, type ReviewCase, type Task } from '@prisma/client';
+import { Prisma, type Escalation, type ReviewCase } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { v7 as uuidv7 } from 'uuid';
 import { AppConflictException, AppNotFoundException } from '../../common/exceptions/exception';
@@ -8,17 +8,13 @@ import {
 	AUDIT_ACTION,
 	calculateDeadline,
 	CASE_STATUS,
-	computeRiskRollup,
 	ESCALATION_STATUS,
 	formatDateOnly,
 	parseDateOnly,
-	RISK_LEVEL,
+	SEVERITY_LEVEL,
 	SEVERITY_RANK,
 	timeRemainingHours,
 	type ActorContext,
-	type RiskRollup,
-	type Severity,
-	CaseStatus,
 } from '../../domain';
 import { AuditService } from '../audit/audit.service';
 import type { CreateReviewCaseDto } from './dto/create-review-case.dto';
@@ -52,7 +48,7 @@ export class ReviewCasesService {
 						reviewWindowDays: dto.review_window_days,
 						deadline,
 						status: CASE_STATUS.OPEN,
-						riskLevel: RISK_LEVEL.LOW,
+						riskLevel: SEVERITY_LEVEL.LOW,
 						riskRank: SEVERITY_RANK.low,
 						assignedTeam: dto.assigned_team,
 						assignedUser: dto.assigned_user ?? null,
@@ -191,36 +187,6 @@ export class ReviewCasesService {
 		}
 
 		return this.toResponse(reviewCase, reviewCase.escalations);
-	}
-
-	async syncCaseRiskRollup(
-		tx: Prisma.TransactionClient,
-		caseId: string,
-		tasks: Task[],
-		escalations: Escalation[],
-		data?: { status: CaseStatus },
-	): Promise<RiskRollup> {
-		const rollup = computeRiskRollup([
-			...tasks.map((task) => ({
-				severity: task.severity as Severity,
-				status: task.status,
-			})),
-			...escalations.map((escalation) => ({
-				severity: escalation.severity as Severity,
-				status: escalation.status,
-			})),
-		]);
-
-		await tx.reviewCase.update({
-			where: { id: caseId },
-			data: {
-				...data,
-				riskLevel: rollup.riskLevel,
-				riskRank: rollup.riskRank,
-			},
-		});
-
-		return rollup;
 	}
 
 	private toResponse(

@@ -3,6 +3,7 @@ import type {
 	EscalationDto,
 	PackagingType,
 	ReviewCaseResponse,
+	RuleExecutionResult,
 	Severity,
 	TaskDto,
 } from '@/types';
@@ -196,21 +197,23 @@ export interface ApplyRulesResult {
 	escalationsChanged: number;
 	triggered: string[];
 	createdTaskIds: string[];
-	responseTasks: Array<{ rule_id: string; title: string; severity: Severity }>;
-	responseEscalations: Array<{ rule_id: string; severity: Severity; reason: string }>;
+	// Per-rule execution results — mirrors the backend RunRulesResponseDto.results
+	// contract: only newly-created tasks/escalations appear here (an idempotent
+	// re-run whose rules already produced tasks/escalations yields an empty list).
+	results: RuleExecutionResult[];
 }
 
 export function applyRuleOutcomes(
 	caseItem: ReviewCaseResponse,
 	outcomes: RuleOutcome[],
 	createTaskId: () => string,
+	createEscalationId: () => string,
 ): ApplyRulesResult {
 	let tasksCreated = 0;
 	let escalationsChanged = 0;
 	const triggered: string[] = [];
 	const createdTaskIds: string[] = [];
-	const responseTasks: ApplyRulesResult['responseTasks'] = [];
-	const responseEscalations: ApplyRulesResult['responseEscalations'] = [];
+	const results: RuleExecutionResult[] = [];
 
 	for (const outcome of outcomes) {
 		triggered.push(outcome.rule_id);
@@ -218,27 +221,8 @@ export function applyRuleOutcomes(
 		if (outcome.kind === 'task') {
 			const existing = (caseItem.open_tasks ?? []).find((task) => task.rule_id === outcome.rule_id);
 
+			// Backend skips a task rule whose ruleId already has a task; no update, no result entry.
 			if (existing) {
-				existing.title = outcome.title;
-
-				existing.description = outcome.description;
-
-				existing.severity = outcome.severity;
-
-				existing.suggested_action = outcome.suggested_action;
-
-				existing.assigned_team = outcome.assigned_team;
-
-				existing.document_type = outcome.document_type;
-
-				existing.due_date = caseItem.deadline;
-
-				responseTasks.push({
-					rule_id: outcome.rule_id,
-					title: outcome.title,
-					severity: outcome.severity,
-				});
-
 				continue;
 			}
 
@@ -262,29 +246,28 @@ export function applyRuleOutcomes(
 
 			createdTaskIds.push(task.id);
 
-			responseTasks.push({
+			results.push({
 				rule_id: outcome.rule_id,
-				title: outcome.title,
+				trigger_reason: outcome.reason,
+				task: { id: task.id, title: task.title, severity: task.severity },
+				escalation: null,
 				severity: outcome.severity,
+				suggested_action: outcome.suggested_action,
 			});
 
 			continue;
 		}
 
+		// Escalations share a single 'deadline' slot: at most one active at a time.
 		const activeDeadlineEscalation = caseItem.escalations.find(
 			(escalation) => escalation.status === 'active',
 		);
 
+		// A same-or-higher severity escalation already covers this — nothing new created.
 		if (
 			activeDeadlineEscalation &&
 			SEVERITY_RANK[activeDeadlineEscalation.severity] >= SEVERITY_RANK[outcome.severity]
 		) {
-			responseEscalations.push({
-				rule_id: outcome.rule_id,
-				severity: activeDeadlineEscalation.severity,
-				reason: activeDeadlineEscalation.reason,
-			});
-
 			continue;
 		}
 
@@ -295,6 +278,8 @@ export function applyRuleOutcomes(
 		}
 
 		const escalation: EscalationDto = {
+			id: createEscalationId(),
+			type: 'deadline',
 			severity: outcome.severity,
 			reason: outcome.reason,
 			suggested_action: outcome.suggested_action,
@@ -305,10 +290,13 @@ export function applyRuleOutcomes(
 
 		escalationsChanged += 1;
 
-		responseEscalations.push({
+		results.push({
 			rule_id: outcome.rule_id,
+			trigger_reason: outcome.reason,
+			task: null,
+			escalation: { id: escalation.id as string, type: 'deadline', severity: outcome.severity },
 			severity: outcome.severity,
-			reason: outcome.reason,
+			suggested_action: outcome.suggested_action,
 		});
 	}
 
@@ -319,8 +307,7 @@ export function applyRuleOutcomes(
 		escalationsChanged,
 		triggered,
 		createdTaskIds,
-		responseTasks,
-		responseEscalations,
+		results,
 	};
 }
 

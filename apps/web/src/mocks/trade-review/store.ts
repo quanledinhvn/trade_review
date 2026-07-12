@@ -37,6 +37,7 @@ export const tradeReviewStore: TradeReviewMockStore = cloneFixture();
 
 let nextCaseId = 200;
 let nextTaskId = 1000;
+let nextEscalationId = 5000;
 
 export function resetTradeReviewStore(): void {
 	const fresh = cloneFixture();
@@ -50,10 +51,16 @@ export function resetTradeReviewStore(): void {
 	nextCaseId = 200;
 
 	nextTaskId = 1000;
+
+	nextEscalationId = 5000;
 }
 
 function createTaskId(): string {
 	return `task-${nextTaskId++}`;
+}
+
+function createEscalationId(): string {
+	return `esc-${nextEscalationId++}`;
 }
 
 function toCaseViewDto(caseItem: ReviewCaseResponse): CaseViewDto {
@@ -541,7 +548,7 @@ export function runRules(caseReference: string): RunRulesResult {
 	}
 
 	const outcomes = evaluateRules(caseItem);
-	const applied = applyRuleOutcomes(caseItem, outcomes, createTaskId);
+	const applied = applyRuleOutcomes(caseItem, outcomes, createTaskId, createEscalationId);
 	const now = new Date().toISOString();
 
 	caseItem.updated_at = now;
@@ -599,8 +606,7 @@ export function runRules(caseReference: string): RunRulesResult {
 
 	return {
 		risk_level: caseItem.risk_level,
-		tasks: applied.responseTasks.length,
-		escalations: applied.responseEscalations.length,
+		results: applied.results,
 	};
 }
 

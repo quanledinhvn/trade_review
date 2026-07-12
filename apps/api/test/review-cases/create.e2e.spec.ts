@@ -2,7 +2,7 @@ import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AUDIT_ACTION } from '../../src/domain/audit';
 import { CASE_STATUS } from '../../src/domain/case-status';
-import { RISK_LEVEL, SEVERITY_RANK } from '../../src/domain/severity';
+import { SEVERITY_LEVEL, SEVERITY_RANK } from '../../src/domain/severity';
 import { AUDIT_ENTITY_TYPE } from '../../src/domain/audit';
 import { DOCUMENT_TYPE } from '../../src/domain/document-type';
 import type { ReviewCaseResponseDto } from '../../src/modules/review-cases/dto/review-case-response.dto';
@@ -33,7 +33,7 @@ describe('POST /api/review-cases (e2e)', () => {
 			case_reference: 'REV-2026-TEST-001',
 			deadline: '2026-07-08',
 			status: CASE_STATUS.OPEN,
-			risk_level: RISK_LEVEL.LOW,
+			risk_level: SEVERITY_LEVEL.LOW,
 			risk_rank: SEVERITY_RANK.low,
 			assigned_team: 'trade_operations',
 		});

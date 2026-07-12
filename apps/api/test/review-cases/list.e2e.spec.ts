@@ -1,6 +1,6 @@
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { RISK_LEVEL } from '../../src/domain/severity';
+import { SEVERITY_LEVEL } from '../../src/domain/severity';
 import { ESCALATION_STATUS } from '../../src/domain/escalation';
 import { PrismaService } from '../../src/database/prisma.service';
 import type { ReviewCasesResponseDto } from '../../src/modules/review-cases/dto/review-cases-response.dto';
@@ -130,7 +130,7 @@ describe('GET /api/review-cases (e2e)', () => {
 				caseId: seeded.id,
 				ruleId: 'deadline_approaching',
 				type: 'deadline',
-				severity: RISK_LEVEL.MEDIUM,
+				severity: SEVERITY_LEVEL.MEDIUM,
 				reason: 'Resolved escalation',
 				suggestedAction: 'Done',
 				status: ESCALATION_STATUS.RESOLVED,

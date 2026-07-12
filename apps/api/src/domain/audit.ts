@@ -6,7 +6,6 @@ export const AUDIT_ACTION = {
 	TASK_COMPLETED: 'task_completed',
 	TASK_REASSIGNED: 'task_reassigned',
 	ESCALATION_CREATED: 'escalation_created',
-	ESCALATION_SUPERSEDED: 'escalation_superseded',
 	ESCALATION_RESOLVED: 'escalation_resolved',
 } as const;
 

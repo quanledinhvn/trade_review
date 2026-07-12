@@ -23,10 +23,12 @@ node_modules/
 CLAUDE.md
 CONTEXT.md
 docs/
+superpowers/
 
 # Test / deploy artifacts
 coverage/
 *.log
 .vercel/
+
 
 

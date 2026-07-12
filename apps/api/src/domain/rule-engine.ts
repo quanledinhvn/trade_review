@@ -1,11 +1,11 @@
 import { timeRemainingHours } from './deadline';
 import { isWoodPackaging } from './packaging';
-import { RISK_LEVEL, SEVERITY_RANK, type RiskLevel, type Severity } from './severity';
+import { SEVERITY_LEVEL, SEVERITY_RANK, type RiskLevel, type Severity } from './severity';
 import { TASK_STATUS } from './task-status';
 import type { DocumentType } from './document-type';
 import { ESCALATION_STATUS } from './escalation';
 import type { PackagingType } from './packaging';
-import type { RuleDefinition, RuleEscalationOutcome, RuleTaskOutcome } from './rules-config';
+import type { RuleDefinition } from './rules-config';
 
 export interface ReviewCaseLike {
 	requiredDocuments: DocumentType[];
@@ -17,16 +17,6 @@ export interface ReviewCaseLike {
 }
 
 export type Predicate = (c: ReviewCaseLike, params: Record<string, unknown>, now?: Date) => boolean;
-
-export interface RuleResult {
-	ruleId: string;
-	version: number;
-	reason: string;
-	task?: RuleTaskOutcome;
-	escalation?: RuleEscalationOutcome;
-	documentType?: DocumentType;
-	rule: RuleDefinition;
-}
 
 export function missingDocuments(c: ReviewCaseLike): DocumentType[] {
 	const completed = new Set(c.completedDocuments);
@@ -61,12 +51,12 @@ export const PREDICATE_REGISTRY: Record<string, Predicate> = {
 	deadline_passed: deadlinePassedPredicate,
 };
 
-export function evaluate(
+export function matchRules(
 	reviewCase: ReviewCaseLike,
 	rules: RuleDefinition[],
 	now: Date = new Date(),
-): RuleResult[] {
-	const results: RuleResult[] = [];
+): RuleDefinition[] {
+	const matched: RuleDefinition[] = [];
 
 	for (const rule of rules) {
 		if (!rule.enabled) {
@@ -80,21 +70,11 @@ export function evaluate(
 		}
 
 		if (predicate(reviewCase, rule.when.params, now)) {
-			const documentType = rule.when.params.documentType as DocumentType | undefined;
-
-			results.push({
-				ruleId: rule.ruleId,
-				version: rule.version,
-				reason: rule.reason,
-				task: rule.task,
-				escalation: rule.escalation,
-				rule,
-				documentType,
-			});
+			matched.push(rule);
 		}
 	}
 
-	return results;
+	return matched;
 }
 
 export type RiskRollupItem = {
@@ -117,10 +97,10 @@ export function computeRiskRollup(items: RiskRollupItem[]): RiskRollup {
 	const activeItems = items.filter((item) => !inactiveStatuses.includes(item.status as never));
 
 	if (activeItems.length === 0) {
-		return { riskLevel: RISK_LEVEL.LOW, riskRank: SEVERITY_RANK.low };
+		return { riskLevel: SEVERITY_LEVEL.LOW, riskRank: SEVERITY_RANK.low };
 	}
 
-	let highest: Severity = RISK_LEVEL.LOW;
+	let highest: Severity = SEVERITY_LEVEL.LOW;
 
 	for (const item of activeItems) {
 		if (SEVERITY_RANK[item.severity] > SEVERITY_RANK[highest]) {

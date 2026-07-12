@@ -1,21 +1,17 @@
-export const RISK_LEVEL = {
+export const SEVERITY_LEVEL = {
 	CRITICAL: 'critical',
 	HIGH: 'high',
 	MEDIUM: 'medium',
 	LOW: 'low',
 } as const;
 
-export type Severity = (typeof RISK_LEVEL)[keyof typeof RISK_LEVEL];
+export type Severity = (typeof SEVERITY_LEVEL)[keyof typeof SEVERITY_LEVEL];
 
 export type RiskLevel = Severity;
 
 export const SEVERITY_RANK: Record<Severity, number> = {
-	critical: 40,
-	high: 30,
-	medium: 20,
-	low: 10,
+	[SEVERITY_LEVEL.CRITICAL]: 40,
+	[SEVERITY_LEVEL.HIGH]: 30,
+	[SEVERITY_LEVEL.MEDIUM]: 20,
+	[SEVERITY_LEVEL.LOW]: 10,
 };
-
-export function severityRank(severity: Severity): number {
-	return SEVERITY_RANK[severity];
-}

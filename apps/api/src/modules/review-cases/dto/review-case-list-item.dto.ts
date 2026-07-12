@@ -1,11 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 import { CASE_STATUS, type CaseStatus } from '../../../domain/case-status';
-import { RISK_LEVEL, type RiskLevel, type Severity } from '../../../domain/severity';
+import { SEVERITY_LEVEL, type RiskLevel, type Severity } from '../../../domain/severity';
 
 @Exclude()
 export class ReviewCaseListEscalationDto {
-	@ApiProperty({ enum: Object.values(RISK_LEVEL) })
+	@ApiProperty({ enum: Object.values(SEVERITY_LEVEL) })
 	@Expose()
 	severity!: Severity;
 
@@ -32,7 +32,7 @@ export class ReviewCaseListItemDto {
 	@Expose()
 	status!: CaseStatus;
 
-	@ApiProperty({ enum: Object.values(RISK_LEVEL) })
+	@ApiProperty({ enum: Object.values(SEVERITY_LEVEL) })
 	@Expose()
 	risk_level!: RiskLevel;
 

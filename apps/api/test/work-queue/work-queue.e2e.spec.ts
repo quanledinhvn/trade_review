@@ -1,7 +1,7 @@
 import { HttpStatus, type INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { CASE_STATUS } from '../../src/domain/case-status';
-import { RISK_LEVEL } from '../../src/domain/severity';
+import { SEVERITY_LEVEL } from '../../src/domain/severity';
 import { ESCALATION_STATUS, RESOLVED_REASON } from '../../src/domain/escalation';
 import { PrismaService } from '../../src/database/prisma.service';
 import { canonicalCasePayload, cleanCasePayload, createCase, seedInReviewCase } from '../utils';
@@ -184,7 +184,7 @@ describe('GET /api/work-queue (e2e)', () => {
 
 		expect(item).toBeDefined();
 
-		expect(item.open_tasks[0].severity).toBe(RISK_LEVEL.CRITICAL);
+		expect(item.open_tasks[0].severity).toBe(SEVERITY_LEVEL.CRITICAL);
 	});
 
 	it('only active escalations included in items', async () => {
@@ -257,7 +257,7 @@ describe('GET /api/work-queue (e2e)', () => {
 
 		expect(item).toMatchObject({
 			case_reference: 'REV-2026-0119',
-			risk_level: RISK_LEVEL.CRITICAL,
+			risk_level: SEVERITY_LEVEL.CRITICAL,
 			time_remaining_hours: expect.any(Number),
 		});
 
@@ -269,7 +269,7 @@ describe('GET /api/work-queue (e2e)', () => {
 			expect.arrayContaining([
 				expect.objectContaining({
 					title: 'Missing transport document',
-					severity: RISK_LEVEL.CRITICAL,
+					severity: SEVERITY_LEVEL.CRITICAL,
 					status: 'open',
 					suggested_action: 'Request transport document from partner',
 				}),
@@ -279,7 +279,7 @@ describe('GET /api/work-queue (e2e)', () => {
 		expect(item.escalations).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
-					severity: RISK_LEVEL.HIGH,
+					severity: SEVERITY_LEVEL.HIGH,
 					reason: 'Review deadline within 48 hours',
 				}),
 			]),

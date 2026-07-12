@@ -187,7 +187,7 @@ High-value review is deliberately a **task** assigned to `management`, not an es
 
 ## 4. Rule Engine
 
-The **rule engine** turns review-case facts into tasks and escalations. It is split into pure evaluation and idempotent persistence.
+The **rule engine** turns review-case facts into tasks and escalations. `runRules` runs three phases inside one transaction: `preEvaluate` (load current state), `evaluate` (pure planning, no writes), and `apply` (idempotent persistence).
 
 ### Source of rules
 
@@ -214,26 +214,35 @@ The **rule engine** turns review-case facts into tasks and escalations. It is sp
 - `deadline_approaching`
 - `deadline_passed`
 
-### Evaluation phase
+### Pre-evaluate phase
 
-`evaluate(reviewCase, rules, now)` is pure:
+`preEvaluate` loads the case's current state once, before any planning:
 
-- It reads case facts and rule config.
-- It checks each enabled rule predicate.
-- It returns matched `RuleResult[]`.
-- It does not write to the database.
+- Active (non-terminal) tasks.
+- Active escalations.
+- The set of rule ids that already produced a task on this case (used to skip re-firing).
+
+### Evaluate phase
+
+`evaluate(reviewCase, preState, now)` is pure — it plans, but does not write:
+
+- `matchRules` checks each enabled rule predicate and returns the matched rule definitions.
+- Plans new tasks, skipping any rule id that already produced a task on this case.
+- Plans escalation changes: supersede a less-severe active escalation of the same type, or noop if an equal/more-severe one already exists.
+- Decides `isCaseReadyComplete` — true when no active tasks remain (existing active tasks plus any it just planned).
+- Rolls up case risk from what stays active.
+- If the case is ready to complete, it plans no new escalations and marks all active escalations for resolution.
 
 ### Apply phase
 
-`applyRuleResults` runs inside a database transaction:
+`apply` runs inside the same database transaction and persists the plan:
 
-- Splits matched results into task outcomes and escalation outcomes.
-- Creates missing tasks, skipping existing `(case_id, rule_id)` tasks.
-- Creates, supersedes, or noops escalations based on active escalation state.
-- Reloads all case tasks and escalations.
-- Resolves case status from active work.
-- Rolls up case risk from active tasks and active escalations.
+- Resolves escalations marked by `evaluate`, with `resolved_reason` of `superseded` or `case_completed`.
+- Bulk-creates the planned tasks and escalations.
+- Sets case `status` to `completed` when ready, otherwise `in_review`.
+- Updates the case `status` and `risk_level` / `risk_rank` only when they actually change (idempotent no-op otherwise).
 - Writes audit events.
+- Returns `{ risk_level, results[] }`, where each result carries `rule_id`, `trigger_reason`, the created `task` or `escalation`, `severity`, and `suggested_action`.
 
 ### What is created or updated after rules run
 

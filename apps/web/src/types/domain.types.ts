@@ -27,6 +27,8 @@ export type PackagingType =
 
 export type EscalationStatus = 'active' | 'resolved';
 
+export type EscalationType = 'deadline';
+
 export const SEVERITY_RANK: Record<Severity, number> = {
 	critical: 40,
 	high: 30,
@@ -200,10 +202,30 @@ export interface AuditLogEntry {
 	after?: Record<string, unknown>;
 }
 
+export interface RunRulesTaskResult {
+	id: string;
+	title: string;
+	severity: Severity;
+}
+
+export interface RunRulesEscalationResult {
+	id: string;
+	type: EscalationType;
+	severity: Severity;
+}
+
+export interface RuleExecutionResult {
+	rule_id: string;
+	trigger_reason: string;
+	task: RunRulesTaskResult | null;
+	escalation: RunRulesEscalationResult | null;
+	severity: Severity;
+	suggested_action: string;
+}
+
 export interface RunRulesResponse {
 	risk_level: RiskLevel;
-	tasks: number;
-	escalations: number;
+	results: RuleExecutionResult[];
 }
 
 export interface CancelCaseRequest {

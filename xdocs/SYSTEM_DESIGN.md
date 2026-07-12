@@ -15,7 +15,7 @@ flowchart LR
     subgraph apps/api [apps/api - NestJS]
         Controller[Controllers<br/>review-cases, tasks, work-queue]
         Service[Services]
-        RuleEngine[Rule Engine<br/>evaluate -> apply]
+        RuleEngine[Rule Engine<br/>preEvaluate -> evaluate -> apply]
         Audit[Audit Logger]
         Prisma[Prisma Client]
     end
@@ -139,7 +139,7 @@ interface RuleDefinition {
 		trigger: RuleTrigger;
 		params: Record<string, unknown>;
 	};
-	task?: RuleTaskOutcome; // task rules — 4 rules
+	task?: RuleTaskOutcome; // task rules — 5 rules
 	escalation?: RuleEscalationOutcome; // escalation rules — 2 rules
 }
 ```
@@ -195,7 +195,7 @@ sequenceDiagram
     participant Ctrl as ReviewCasesController
     participant Svc as RuleEngineService
     participant CaseSvc as ReviewCasesService
-    participant Dom as evaluate()
+    participant Dom as matchRules()
     participant DB as Database
 
     Op->>Ctrl: POST /review-cases/:id/run-rules
@@ -208,19 +208,19 @@ sequenceDiagram
         Svc-->>Ctrl: 409 Conflict
         Ctrl-->>Op: cannot run rules
     else case active
-        Svc->>Dom: evaluate(case, rules[], now)
+        Svc->>DB: $transaction
+        Note over Svc,DB: preEvaluate — load active tasks, active escalations, done rule ids
+        Svc->>Dom: evaluate → matchRules(case, rules[], now)
         loop each enabled rule
             Dom->>Dom: PREDICATE_REGISTRY[when.trigger](case, params, now)
         end
-        Dom-->>Svc: RuleResult[]
-        Svc->>DB: $transaction
-        Note over Svc,DB: persistNewTasks — skip if (case_id, rule_id) already exists
-        Note over Svc,DB: persistEscalationChanges — supersede or insert active
-        Note over Svc,DB: resolveCaseStatusAfterRules — in_review if active work, else completed
-        Note over Svc,DB: syncCaseRiskRollup — set status, risk_level/risk_rank
-        Note over Svc,DB: writeRuleExecutionAudits — rules_executed, task_created, escalation_*
-        Note over Svc,DB: auditReviewCase(case_updated) if status changed
-        Svc-->>Ctrl: { risk_level, tasks: count, escalations: active count }
+        Dom-->>Svc: matched RuleDefinition[]
+        Note over Svc: evaluate (pure) — plan new tasks/escalations (skip rule ids already done),<br/>decide isCaseReadyComplete (no active tasks), resolve superseded/completed escalations,<br/>compute risk rollup
+        Note over Svc,DB: apply — resolveMany escalations (superseded / case_completed)
+        Note over Svc,DB: apply — createMany new tasks, createMany new escalations
+        Note over Svc,DB: apply — update case status + risk_level/risk_rank only when changed
+        Note over Svc,DB: apply — audit rules_executed, task_created, escalation_*, case_updated
+        Svc-->>Ctrl: { risk_level, results: [{ rule_id, trigger_reason, task, escalation, severity, suggested_action }] }
         Ctrl-->>Op: 200 OK
     end
 ```
@@ -243,9 +243,13 @@ type Predicate = (
   e.g. `missing_document` uses `{ documentType: "transport_document" }`; `high_value` uses `{ threshold: 100000 }`.
 - **`now`** — current time, used by deadline predicates.
 
+The pipeline runs as three phases inside one transaction: `preEvaluate` (load
+current state), `evaluate` (pure planning), `apply` (persist).
+
 ```mermaid
 flowchart TD
-    Start([Start]) --> Case[ReviewCase]
+    Start([Start]) --> Pre[preEvaluate<br/>load active tasks,<br/>active escalations, done rule ids]
+    Pre --> Case[ReviewCase + state]
     Config[rules.config] --> Eval[evaluate]
     Case --> Eval
 
@@ -261,7 +265,7 @@ flowchart TD
     end
 
     Lookup -.-> Registry
-    Lookup --> Results[RuleResult list]
+    Lookup --> Results[planned tasks / escalations<br/>+ resolutions + risk rollup]
 
     Results --> Apply[apply]
     Apply --> End([End])
@@ -309,10 +313,20 @@ flowchart TD
     EInsert --> After
     ENoop --> After
 
-    After[All outcomes processed] --> Rollup[Risk rollup]
-    Rollup --> Audit[Audit log]
+    After[All outcomes processed] --> Complete{No active tasks?}
+    Complete -->|yes| Done[status = completed<br/>resolve active escalations<br/>case_completed]
+    Complete -->|no| InReview[status = in_review]
+    Done --> Rollup[Risk rollup]
+    InReview --> Rollup
+    Rollup --> Update[Update case only if<br/>status or risk changed]
+    Update --> Audit[Audit log]
     Audit --> End([End])
 ```
+
+When `evaluate` finds no active tasks remain (including any it planned this run), it
+skips inserting new escalations, marks the case `completed`, and resolves every
+active escalation with `resolved_reason = "case_completed"` — the same completion
+cascade the complete-task endpoint uses.
 
 ### 3.5 Rules
 
@@ -356,8 +370,17 @@ stateDiagram-v2
     cancelled --> [*]
 ```
 
-Completing a task with a `document_type` also appends it to the case's
-`completed_documents`, so a later `run-rules` call won't recreate the same task.
+`POST /tasks/:id/complete` runs one transaction: it sets the task terminal
+(`completed` + `resolution_comment`), then cascades to the case:
+
+- A `document_type` task appends its document to the case's `completed_documents`,
+  so a later `run-rules` call won't recreate the same task.
+- The case's active tasks and escalations are reloaded and its `risk_level` /
+  `risk_rank` are rolled up from what remains active.
+- If this was the **last** active task, the case moves to `completed` and every
+  still-active escalation is resolved with `resolved_reason = "case_completed"`.
+- The endpoint is 409 if the task is already terminal, and enforces that the actor
+  belongs to the task's assigned team/user.
 
 ### 4.3 Escalation lifecycle (resolve-then-insert)
 

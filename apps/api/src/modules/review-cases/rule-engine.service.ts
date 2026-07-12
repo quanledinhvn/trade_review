@@ -5,44 +5,61 @@ import { v7 as uuidv7 } from 'uuid';
 import { AppConflictException } from '../../common/exceptions/exception';
 import { PrismaService } from '../../database/prisma.service';
 import {
-	applyEscalation,
-	APPLY_ESCALATION_ACTION,
 	AUDIT_ACTION,
 	CASE_STATUS,
 	computeRiskRollup,
-	evaluate,
+	matchRules,
 	ESCALATION_STATUS,
+	isTerminalTaskStatus,
 	loadRulesConfig,
-	resolveCaseStatusAfterRules,
 	RESOLVED_REASON,
 	SEVERITY_RANK,
 	TASK_STATUS,
-	type DocumentType,
-	type EscalationLike,
-	type EvaluatedEscalation,
-	type RuleDefinition,
-	type RuleResult,
 	type ActorContext,
+	type DocumentType,
+	type RiskRollup,
+	type RuleDefinition,
+	type RuleEscalationOutcome,
+	type RuleTaskOutcome,
 	type Severity,
-	RiskRollup,
+	RiskRollupItem,
 } from '../../domain';
-import { AuditService } from '../audit/audit.service';
+import {
+	AuditService,
+	CaseAuditEntity,
+	EscalationAuditEntity,
+	type AuditLogEntry,
+} from '../audit/audit.service';
 import { RunRulesResponseDto } from './dto/run-rules-response.dto';
 import { ReviewCasesService } from './review-cases.service';
+import { pickFieldsFrom } from '../../common/utils/pick-fields-from';
 
 type TransactionClient = Prisma.TransactionClient;
 
-interface EscalationAuditChange {
-	action: typeof AUDIT_ACTION.ESCALATION_CREATED | typeof AUDIT_ACTION.ESCALATION_SUPERSEDED;
-	escalationId: string;
-	ruleId: string;
-	severity: string;
+interface PreEvaluation {
+	taskActive: Task[];
+	escActive: Escalation[];
+	doneRuleIdSet: Set<string>;
 }
 
-interface RuleExecutionOutcome {
-	tasks: Task[];
-	escalations: Escalation[];
-	riskRollup: ReturnType<typeof computeRiskRollup>;
+interface Evaluation {
+	isCaseReadyComplete: boolean;
+	riskRollup: RiskRollup;
+	newTasks: Prisma.TaskUncheckedCreateInput[];
+	newEscalations: Prisma.EscalationUncheckedCreateInput[];
+	resolveEscalationIds: string[];
+}
+
+interface RunRulesOutcome {
+	riskLevel: string;
+	results: Array<{
+		rule_id: string;
+		trigger_reason: string;
+		task: { id: string; title: string; severity: string } | null;
+		escalation: { id: string; type: string; severity: string } | null;
+		severity: string;
+		suggested_action: string;
+	}>;
 }
 
 @Injectable()
@@ -65,21 +82,42 @@ export class RuleEngineService {
 		}
 
 		const now = new Date();
-		const results = this.evaluateCase(reviewCase, now);
 
-		const outcome = await this.prisma.$transaction((tx) =>
-			this.applyRuleResults(tx, reviewCase, results, now, actor),
-		);
+		const outcome = await this.prisma.$transaction(async (tx) => {
+			const preEvaluation = await this.preEvaluate(tx, reviewCase);
 
-		return this.toRunRulesResponse(
-			outcome.riskRollup.riskLevel,
-			outcome.tasks,
-			outcome.escalations,
-		);
+			const { evaluation, matchedRules } = this.evaluate(reviewCase, preEvaluation, now);
+
+			return this.apply(tx, reviewCase, matchedRules, evaluation, actor);
+		});
+
+		return plainToInstance(RunRulesResponseDto, {
+			risk_level: outcome.riskLevel,
+			results: outcome.results,
+		});
 	}
 
-	evaluateCase(reviewCase: ReviewCase, now: Date = new Date()): RuleResult[] {
-		return evaluate(
+	private async preEvaluate(tx: TransactionClient, reviewCase: ReviewCase): Promise<PreEvaluation> {
+		const [allTasks, escActive] = await Promise.all([
+			tx.task.findMany({ where: { caseId: reviewCase.id }, orderBy: { createdAt: 'asc' } }),
+			tx.escalation.findMany({
+				where: { caseId: reviewCase.id, status: ESCALATION_STATUS.ACTIVE },
+				orderBy: { createdAt: 'asc' },
+			}),
+		]);
+
+		const taskActive = allTasks.filter((task) => !isTerminalTaskStatus(task.status));
+		const doneRuleIdSet = new Set(allTasks.map((task) => task.ruleId));
+
+		return { taskActive, escActive, doneRuleIdSet };
+	}
+
+	private evaluate(
+		reviewCase: ReviewCase,
+		pre: PreEvaluation,
+		now: Date,
+	): { evaluation: Evaluation; matchedRules: RuleDefinition[] } {
+		const matchedRules = matchRules(
 			{
 				requiredDocuments: reviewCase.requiredDocuments as DocumentType[],
 				completedDocuments: reviewCase.completedDocuments as DocumentType[],
@@ -91,126 +129,87 @@ export class RuleEngineService {
 			this.rules,
 			now,
 		);
-	}
 
-	private async applyRuleResults(
-		tx: TransactionClient,
-		reviewCase: ReviewCase,
-		results: RuleResult[],
-		now: Date,
-		actor: ActorContext,
-	): Promise<RuleExecutionOutcome> {
-		const taskResults = results.filter((result) => result.task);
-		const escalationResults = results.filter((result) => result.escalation);
+		const activeEscByType = new Map(pre.escActive.map((esc) => [esc.type, esc]));
+		const seenRuleIds = new Set(pre.doneRuleIdSet);
 
-		const newlyCreatedRuleIds = await this.persistNewTasks(tx, reviewCase, taskResults);
-		const escalationChanges = await this.persistEscalationChanges(
-			tx,
-			reviewCase,
-			escalationResults,
-			now,
-		);
+		const newTasks: Prisma.TaskUncheckedCreateInput[] = [];
+		const newEscalationsTemp: Prisma.EscalationUncheckedCreateInput[] = [];
+		const resolveEscalationIdsSet = new Set<string>();
 
-		const tasks = await tx.task.findMany({
-			where: { caseId: reviewCase.id },
-			orderBy: { createdAt: 'asc' },
-		});
-
-		const escalations = await tx.escalation.findMany({
-			where: { caseId: reviewCase.id },
-			orderBy: { createdAt: 'asc' },
-		});
-
-		const previousStatus = reviewCase.status;
-		const caseStatus = resolveCaseStatusAfterRules(tasks, escalations);
-
-		const riskRollup = await this.reviewCasesService.syncCaseRiskRollup(
-			tx,
-			reviewCase.id,
-			tasks,
-			escalations,
-			{ status: caseStatus },
-		);
-
-		await this.writeRuleExecutionAudits(tx, reviewCase, {
-			matchedRuleIds: results.map((result) => result.ruleId),
-			newlyCreatedRuleIds,
-			escalationChanges,
-			riskRollup,
-			tasks,
-			actorId: actor.actorId,
-		});
-
-		if (caseStatus !== previousStatus) {
-			await this.auditService.auditReviewCase(tx, {
-				action: AUDIT_ACTION.CASE_UPDATED,
-				before: {
-					id: reviewCase.id,
-					caseReference: reviewCase.caseReference,
-					status: previousStatus,
-				},
-				after: {
-					id: reviewCase.id,
-					caseReference: reviewCase.caseReference,
-					status: caseStatus,
-				},
-				actor: actor.actorId,
-			});
-		}
-
-		return { tasks, escalations, riskRollup };
-	}
-
-	private async persistNewTasks(
-		tx: TransactionClient,
-		reviewCase: ReviewCase,
-		taskResults: RuleResult[],
-	): Promise<string[]> {
-		if (taskResults.length === 0) {
-			return [];
-		}
-
-		const existingTasks = await tx.task.findMany({
-			where: {
-				caseId: reviewCase.id,
-				ruleId: { in: taskResults.map((result) => result.ruleId) },
-			},
-			select: { ruleId: true },
-		});
-
-		const existingRuleIds = new Set(existingTasks.map((task) => task.ruleId));
-		const newlyCreatedRuleIds: string[] = [];
-
-		for (const result of taskResults) {
-			const taskOutcome = result.task;
-
-			if (existingRuleIds.has(result.ruleId) || !taskOutcome) {
+		for (const rule of matchedRules) {
+			if (seenRuleIds.has(rule.ruleId)) {
 				continue;
 			}
 
-			await tx.task.create({
-				data: this.buildTaskCreateData(reviewCase, result, taskOutcome),
-			});
+			if (rule.task) {
+				newTasks.push(this.planTaskCreateData(reviewCase, rule, rule.task));
 
-			existingRuleIds.add(result.ruleId);
+				seenRuleIds.add(rule.ruleId);
+			}
 
-			newlyCreatedRuleIds.push(result.ruleId);
+			if (rule.escalation) {
+				const existing = activeEscByType.get(rule.escalation.type) ?? null;
+
+				if (
+					existing &&
+					SEVERITY_RANK[existing.severity as Severity] >=
+						SEVERITY_RANK[rule.escalation.severity as Severity]
+				) {
+					continue;
+				}
+
+				const planned = this.planEscalationCreateData(reviewCase, rule, rule.escalation);
+
+				newEscalationsTemp.push(planned);
+
+				if (existing) {
+					resolveEscalationIdsSet.add(existing.id);
+				}
+			}
 		}
 
-		return newlyCreatedRuleIds;
+		const isCaseReadyComplete = pre.taskActive.length + newTasks.length === 0;
+
+		const newEscalations = isCaseReadyComplete ? [] : newEscalationsTemp;
+		const resolveEscalationIds = isCaseReadyComplete
+			? pre.escActive.map((escalation) => escalation.id)
+			: Array.from(resolveEscalationIdsSet);
+
+		const activeEscalations = pre.escActive.filter(
+			(escalation) => !resolveEscalationIdsSet.has(escalation.id),
+		);
+
+		const riskRollup = computeRiskRollup([
+			...(pre.taskActive as RiskRollupItem[]),
+			...(newTasks as RiskRollupItem[]),
+			...(!isCaseReadyComplete
+				? [...(activeEscalations as RiskRollupItem[]), ...(newEscalations as RiskRollupItem[])]
+				: []),
+		]);
+
+		const evaluation: Evaluation = {
+			isCaseReadyComplete,
+			riskRollup,
+			newTasks,
+			newEscalations,
+			resolveEscalationIds,
+		};
+
+		return { evaluation, matchedRules };
 	}
 
-	private buildTaskCreateData(
+	private planTaskCreateData(
 		reviewCase: ReviewCase,
-		result: RuleResult,
-		task: NonNullable<RuleResult['task']>,
+		rule: RuleDefinition,
+		task: RuleTaskOutcome,
 	): Prisma.TaskUncheckedCreateInput {
 		return {
 			id: uuidv7(),
 			caseId: reviewCase.id,
-			ruleId: result.ruleId,
+			ruleId: rule.ruleId,
 			title: task.title,
-			reason: result.reason,
+			reason: rule.reason,
 			description: task.description,
 			severity: task.severity,
 			severityRank: SEVERITY_RANK[task.severity],
@@ -218,198 +217,235 @@ export class RuleEngineService {
 			dueDate: reviewCase.deadline,
 			assignedTeam: task.assignedTeam,
 			status: TASK_STATUS.OPEN,
-			documentType: result.documentType ?? null,
-			ruleSnapshot: result.rule as unknown as Prisma.InputJsonValue,
+			documentType: (rule.when.params.documentType as DocumentType | undefined) ?? null,
+			ruleSnapshot: rule as unknown as Prisma.InputJsonValue,
 		};
 	}
 
-	private async persistEscalationChanges(
+	private planEscalationCreateData(
+		reviewCase: ReviewCase,
+		rule: RuleDefinition,
+		escalation: RuleEscalationOutcome,
+	): Prisma.EscalationUncheckedCreateInput {
+		return {
+			id: uuidv7(),
+			caseId: reviewCase.id,
+			ruleId: rule.ruleId,
+			type: escalation.type,
+			severity: escalation.severity,
+			reason: escalation.reason,
+			suggestedAction: escalation.suggestedAction,
+			status: ESCALATION_STATUS.ACTIVE,
+			ruleSnapshot: rule as unknown as Prisma.InputJsonValue,
+		};
+	}
+
+	private async apply(
 		tx: TransactionClient,
 		reviewCase: ReviewCase,
-		escalationResults: RuleResult[],
-		now: Date,
-	): Promise<EscalationAuditChange[]> {
-		if (escalationResults.length === 0) {
-			return [];
-		}
+		matchedRules: RuleDefinition[],
+		evaluation: Evaluation,
+		actor: ActorContext,
+	): Promise<RunRulesOutcome> {
+		const { isCaseReadyComplete, riskRollup, newTasks, newEscalations, resolveEscalationIds } =
+			evaluation;
 
-		const escalationTypes = [
-			...new Set(
-				escalationResults.flatMap((result) => (result.escalation ? [result.escalation.type] : [])),
-			),
+		const newRuleIds = [
+			...newTasks.map((task) => task.ruleId),
+			...newEscalations.map((escalation) => escalation.ruleId),
 		];
 
-		const activeEscalations = await tx.escalation.findMany({
-			where: {
-				caseId: reviewCase.id,
-				status: ESCALATION_STATUS.ACTIVE,
-				type: { in: escalationTypes },
-			},
-		});
-
-		const activeByType = new Map(
-			activeEscalations.map((escalation) => [escalation.type, escalation]),
-		);
-		const changes: EscalationAuditChange[] = [];
-
-		for (const result of escalationResults) {
-			const escalation = result.escalation;
-
-			if (!escalation) {
-				continue;
-			}
-
-			const existingActive = activeByType.get(escalation.type) ?? null;
-
-			const action = applyEscalation(
-				existingActive ? toEscalationLike(existingActive) : null,
-				toEvaluatedEscalation(result.ruleId, escalation),
-			);
-
-			if (action === APPLY_ESCALATION_ACTION.NOOP) {
-				continue;
-			}
-
-			if (action === APPLY_ESCALATION_ACTION.SUPERSEDE && existingActive) {
-				await tx.escalation.update({
-					where: { id: existingActive.id },
-					data: {
-						status: ESCALATION_STATUS.RESOLVED,
-						resolvedAt: now,
-						resolvedReason: RESOLVED_REASON.SUPERSEDED,
-					},
-				});
-
-				activeByType.delete(existingActive.type);
-
-				changes.push({
-					action: AUDIT_ACTION.ESCALATION_SUPERSEDED,
-					escalationId: existingActive.id,
-					ruleId: existingActive.ruleId,
-					severity: existingActive.severity,
-				});
-			}
-
-			const createdEscalation = await tx.escalation.create({
+		if (resolveEscalationIds.length > 0) {
+			await tx.escalation.updateMany({
+				where: { id: { in: resolveEscalationIds } },
 				data: {
-					id: uuidv7(),
-					caseId: reviewCase.id,
-					ruleId: result.ruleId,
+					status: ESCALATION_STATUS.RESOLVED,
+					resolvedAt: new Date(),
+					resolvedReason: isCaseReadyComplete
+						? RESOLVED_REASON.CASE_COMPLETED
+						: RESOLVED_REASON.SUPERSEDED,
+				},
+			});
+		}
+
+		if (newTasks.length > 0) {
+			await tx.task.createMany({ data: newTasks });
+		}
+
+		if (newEscalations.length > 0) {
+			await tx.escalation.createMany({ data: newEscalations });
+		}
+
+		const nextStatus = isCaseReadyComplete ? CASE_STATUS.COMPLETED : CASE_STATUS.IN_REVIEW;
+
+		const reviewCaseUpdateData: Partial<ReviewCase> = {};
+
+		if (nextStatus !== reviewCase.status) {
+			reviewCaseUpdateData.status = nextStatus;
+		}
+
+		if (riskRollup.riskRank !== reviewCase.riskRank) {
+			reviewCaseUpdateData.riskRank = riskRollup.riskRank;
+
+			reviewCaseUpdateData.riskLevel = riskRollup.riskLevel;
+		}
+
+		if (Object.keys(reviewCaseUpdateData).length > 0) {
+			await tx.reviewCase.update({
+				where: { id: reviewCase.id },
+				data: reviewCaseUpdateData,
+			});
+		}
+
+		await this.auditService.auditMany(
+			tx,
+			this.buildRuleExecutionAudits(reviewCase, {
+				isCaseReadyComplete,
+				reviewCaseUpdateData,
+				newTasks,
+				newEscalations,
+				matchedRuleIds: matchedRules.map((result) => result.ruleId),
+				newRuleIds,
+				resolveEscalationIds,
+				actorId: actor.actorId,
+			}),
+		);
+
+		return {
+			riskLevel: riskRollup.riskLevel,
+			results: this.buildRuleResults(newTasks, newEscalations),
+		};
+	}
+
+	private buildRuleResults(
+		newTasks: Prisma.TaskUncheckedCreateInput[],
+		newEscalations: Prisma.EscalationUncheckedCreateInput[],
+	): RunRulesOutcome['results'] {
+		const results: RunRulesOutcome['results'] = [];
+
+		for (const task of newTasks) {
+			results.push({
+				rule_id: task.ruleId,
+				trigger_reason: task.reason,
+				task: {
+					id: task.id,
+					title: task.title,
+					severity: task.severity,
+				},
+				escalation: null,
+				severity: task.severity,
+				suggested_action: task.suggestedAction,
+			});
+		}
+
+		for (const escalation of newEscalations) {
+			results.push({
+				rule_id: escalation.ruleId,
+				trigger_reason: escalation.reason,
+				task: null,
+				escalation: {
+					id: escalation.id,
 					type: escalation.type,
 					severity: escalation.severity,
-					reason: escalation.reason,
-					suggestedAction: escalation.suggestedAction,
-					status: ESCALATION_STATUS.ACTIVE,
-					ruleSnapshot: result.rule as unknown as Prisma.InputJsonValue,
 				},
-			});
-
-			activeByType.set(createdEscalation.type, createdEscalation);
-
-			changes.push({
-				action: AUDIT_ACTION.ESCALATION_CREATED,
-				escalationId: createdEscalation.id,
-				ruleId: result.ruleId,
 				severity: escalation.severity,
+				suggested_action: escalation.suggestedAction,
 			});
 		}
 
-		return changes;
+		return results;
 	}
 
-	private async writeRuleExecutionAudits(
-		tx: TransactionClient,
-		reviewCase: Pick<ReviewCase, 'id' | 'caseReference'>,
+	private buildRuleExecutionAudits(
+		reviewCase: ReviewCase,
 		context: {
+			isCaseReadyComplete: boolean;
 			matchedRuleIds: string[];
-			newlyCreatedRuleIds: string[];
-			escalationChanges: EscalationAuditChange[];
-			riskRollup: RiskRollup;
-			tasks: Task[];
+			newTasks: Prisma.TaskUncheckedCreateInput[];
+			newEscalations: Prisma.EscalationUncheckedCreateInput[];
+			newRuleIds: string[];
+			reviewCaseUpdateData: Prisma.ReviewCaseUncheckedUpdateInput;
+			resolveEscalationIds: string[];
 			actorId: string;
 		},
-	): Promise<void> {
-		const { matchedRuleIds, newlyCreatedRuleIds, escalationChanges, riskRollup, tasks, actorId } =
-			context;
+	): AuditLogEntry[] {
+		const {
+			isCaseReadyComplete,
+			matchedRuleIds,
+			newTasks,
+			newEscalations,
+			newRuleIds,
+			reviewCaseUpdateData,
+			resolveEscalationIds,
+			actorId,
+		} = context;
+		const entries: AuditLogEntry[] = [];
 
-		await this.auditService.auditReviewCase(tx, {
-			action: AUDIT_ACTION.RULES_EXECUTED,
-			after: {
-				id: reviewCase.id,
-				caseReference: reviewCase.caseReference,
-				riskLevel: riskRollup.riskLevel,
-			},
-			matchedRules: matchedRuleIds,
-			createdRuleIds: newlyCreatedRuleIds,
-			actor: actorId,
-		});
+		const reviewCaseAfter = {
+			...reviewCaseUpdateData,
+			id: reviewCase.id,
+			caseReference: reviewCase.caseReference,
+		} as CaseAuditEntity;
 
-		const createdRuleIdSet = new Set(newlyCreatedRuleIds);
-
-		for (const task of tasks) {
-			if (!createdRuleIdSet.has(task.ruleId)) {
-				continue;
-			}
-
-			await this.auditService.auditTask(tx, {
-				action: AUDIT_ACTION.TASK_CREATED,
-				after: task,
-				actor: 'system',
-			});
-		}
-
-		for (const change of escalationChanges) {
-			await this.auditService.auditEscalation(tx, {
-				action: change.action,
-				after: {
-					id: change.escalationId,
-					caseId: reviewCase.id,
-					ruleId: change.ruleId,
-					severity: change.severity,
-					...(change.action === AUDIT_ACTION.ESCALATION_SUPERSEDED
-						? { resolvedReason: RESOLVED_REASON.SUPERSEDED }
-						: {}),
-				},
-				actor: 'system',
-			});
-		}
-	}
-
-	private toRunRulesResponse(
-		riskLevel: string,
-		tasks: Task[],
-		escalations: Escalation[],
-	): RunRulesResponseDto {
-		const activeEscalations = escalations.filter(
-			(escalation) => escalation.status === ESCALATION_STATUS.ACTIVE,
+		entries.push(
+			this.auditService.buildReviewCaseEntry({
+				action: AUDIT_ACTION.RULES_EXECUTED,
+				before: pickFieldsFrom(reviewCase, reviewCaseAfter),
+				after: reviewCaseAfter,
+				matchedRules: matchedRuleIds,
+				createdRuleIds: newRuleIds,
+				actor: actorId,
+			}),
 		);
 
-		return plainToInstance(RunRulesResponseDto, {
-			risk_level: riskLevel,
-			tasks: tasks.length,
-			escalations: activeEscalations.length,
-		});
+		for (const task of newTasks) {
+			entries.push(
+				this.auditService.buildTaskEntry({
+					action: AUDIT_ACTION.TASK_CREATED,
+					after: {
+						id: task.id,
+						caseId: reviewCase.id,
+						title: task.title,
+						ruleId: task.ruleId,
+						severity: task.severity,
+					},
+					actor: 'system',
+				}),
+			);
+		}
+
+		for (const escalationId of resolveEscalationIds) {
+			entries.push(
+				this.auditService.buildEscalationEntry({
+					action: AUDIT_ACTION.ESCALATION_RESOLVED,
+					before: {
+						id: escalationId,
+						caseId: reviewCase.id,
+						status: ESCALATION_STATUS.ACTIVE,
+					},
+					after: {
+						id: escalationId,
+						caseId: reviewCase.id,
+						status: ESCALATION_STATUS.RESOLVED,
+						resolvedReason: isCaseReadyComplete
+							? RESOLVED_REASON.CASE_COMPLETED
+							: RESOLVED_REASON.SUPERSEDED,
+					},
+					actor: 'system',
+				}),
+			);
+		}
+
+		for (const escalation of newEscalations) {
+			entries.push(
+				this.auditService.buildEscalationEntry({
+					action: AUDIT_ACTION.ESCALATION_CREATED,
+					after: escalation as EscalationAuditEntity,
+					actor: 'system',
+				}),
+			);
+		}
+
+		return entries;
 	}
-}
-
-function toEscalationLike(escalation: Escalation): EscalationLike {
-	return {
-		type: escalation.type as EscalationLike['type'],
-		ruleId: escalation.ruleId,
-		severity: escalation.severity as Severity,
-		status: escalation.status as EscalationLike['status'],
-	};
-}
-
-function toEvaluatedEscalation(
-	ruleId: string,
-	escalation: NonNullable<RuleResult['escalation']>,
-): EvaluatedEscalation {
-	return {
-		type: escalation.type as EvaluatedEscalation['type'],
-		ruleId,
-		severity: escalation.severity,
-		reason: escalation.reason,
-		suggestedAction: escalation.suggestedAction,
-	};
 }

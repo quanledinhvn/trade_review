@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose } from 'class-transformer';
 import { DOCUMENT_TYPE_VALUES, type DocumentType } from '../../../domain/document-type';
-import { RISK_LEVEL, type Severity } from '../../../domain/severity';
+import { SEVERITY_LEVEL, type Severity } from '../../../domain/severity';
 import { TASK_STATUS, type TaskStatus } from '../../../domain/task-status';
 
 @Exclude()
@@ -30,7 +30,7 @@ export class TaskDto {
 	@Expose()
 	description!: string;
 
-	@ApiProperty({ enum: Object.values(RISK_LEVEL) })
+	@ApiProperty({ enum: Object.values(SEVERITY_LEVEL) })
 	@Expose()
 	severity!: Severity;
 

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Exclude, Expose } from 'class-transformer';
-import { RISK_LEVEL, type RiskLevel, type Severity } from '../../../domain/severity';
+import { SEVERITY_LEVEL, type RiskLevel, type Severity } from '../../../domain/severity';
 import { TASK_STATUS, type TaskStatus } from '../../../domain/task-status';
 
 @Exclude()
@@ -13,7 +13,7 @@ export class WorkQueueTaskViewDto {
 	@Expose()
 	title!: string;
 
-	@ApiProperty({ enum: Object.values(RISK_LEVEL) })
+	@ApiProperty({ enum: Object.values(SEVERITY_LEVEL) })
 	@Expose()
 	severity!: Severity;
 
@@ -28,7 +28,7 @@ export class WorkQueueTaskViewDto {
 
 @Exclude()
 export class WorkQueueEscalationViewDto {
-	@ApiProperty({ enum: Object.values(RISK_LEVEL) })
+	@ApiProperty({ enum: Object.values(SEVERITY_LEVEL) })
 	@Expose()
 	severity!: Severity;
 
@@ -55,7 +55,7 @@ export class CaseViewDto {
 	@Expose()
 	status!: string;
 
-	@ApiProperty({ enum: Object.values(RISK_LEVEL) })
+	@ApiProperty({ enum: Object.values(SEVERITY_LEVEL) })
 	@Expose()
 	risk_level!: RiskLevel;
 

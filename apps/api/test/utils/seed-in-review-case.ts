@@ -5,14 +5,14 @@ import {
 	CASE_STATUS,
 	computeRiskRollup,
 	ESCALATION_STATUS,
-	evaluate,
 	loadRulesConfig,
+	matchRules,
 	parseDateOnly,
 	SEVERITY_RANK,
 	TASK_STATUS,
 	type CaseStatus,
 	type DocumentType,
-	type RuleResult,
+	type RuleDefinition,
 } from '../../src/domain';
 import type { CreateReviewCaseDto } from '../../src/modules/review-cases/dto/create-review-case.dto';
 import { validCreatePayload } from './fixtures';
@@ -41,15 +41,15 @@ export interface SeededInReviewCase extends ReviewCase {
 	escalations: Escalation[];
 }
 
-function buildTaskData(reviewCase: ReviewCase, result: RuleResult, override?: TaskSeedOverride) {
-	const task = result.task!;
+function buildTaskData(reviewCase: ReviewCase, rule: RuleDefinition, override?: TaskSeedOverride) {
+	const task = rule.task!;
 
 	return {
 		id: uuidv7(),
 		caseId: reviewCase.id,
-		ruleId: result.ruleId,
+		ruleId: rule.ruleId,
 		title: task.title,
-		reason: result.reason,
+		reason: rule.reason,
 		description: task.description,
 		severity: task.severity,
 		severityRank: SEVERITY_RANK[task.severity],
@@ -59,22 +59,22 @@ function buildTaskData(reviewCase: ReviewCase, result: RuleResult, override?: Ta
 		assignedUser: override?.assignedUser ?? null,
 		status: override?.status ?? TASK_STATUS.OPEN,
 		resolutionComment: override?.resolutionComment ?? null,
-		documentType: result.documentType ?? null,
-		ruleSnapshot: result.rule as unknown as Prisma.InputJsonValue,
+		documentType: (rule.when.params.documentType as DocumentType | undefined) ?? null,
+		ruleSnapshot: rule as unknown as Prisma.InputJsonValue,
 	};
 }
 
 function buildEscalationData(
 	reviewCase: ReviewCase,
-	result: RuleResult,
+	rule: RuleDefinition,
 	override?: EscalationSeedOverride,
 ) {
-	const escalation = result.escalation!;
+	const escalation = rule.escalation!;
 
 	return {
 		id: uuidv7(),
 		caseId: reviewCase.id,
-		ruleId: result.ruleId,
+		ruleId: rule.ruleId,
 		type: escalation.type,
 		severity: escalation.severity,
 		reason: escalation.reason,
@@ -82,7 +82,7 @@ function buildEscalationData(
 		status: override?.status ?? ESCALATION_STATUS.ACTIVE,
 		resolvedAt: override?.resolvedAt ?? null,
 		resolvedReason: override?.resolvedReason ?? null,
-		ruleSnapshot: result.rule as unknown as Prisma.InputJsonValue,
+		ruleSnapshot: rule as unknown as Prisma.InputJsonValue,
 	};
 }
 
@@ -116,23 +116,19 @@ export async function seedInReviewCase(
 		deadline,
 	};
 
-	const results = evaluate(caseLike, loadRulesConfig(), now);
-	const taskResults = results.filter((result) => result.task);
-	const escalationResults = results.filter((result) => result.escalation);
+	const matched = matchRules(caseLike, loadRulesConfig(), now);
+	const taskRules = matched.filter((rule) => rule.task);
+	const escalationRules = matched.filter((rule) => rule.escalation);
 
-	const taskData = taskResults.map((result) =>
-		buildTaskData(
-			{ id: '', deadline } as ReviewCase,
-			result,
-			options.taskOverrides?.[result.ruleId],
-		),
+	const taskData = taskRules.map((rule) =>
+		buildTaskData({ id: '', deadline } as ReviewCase, rule, options.taskOverrides?.[rule.ruleId]),
 	);
 
-	const escalationData = escalationResults.map((result) =>
+	const escalationData = escalationRules.map((rule) =>
 		buildEscalationData(
 			{ id: '', deadline } as ReviewCase,
-			result,
-			options.escalationOverrides?.[result.ruleId],
+			rule,
+			options.escalationOverrides?.[rule.ruleId],
 		),
 	);
 

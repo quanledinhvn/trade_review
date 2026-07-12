@@ -314,45 +314,18 @@ describe('runRules', () => {
 	});
 
 	it('re-runs rules idempotently on the canonical REV-2026-0119 fixture', () => {
+		// The fixture already carries the 3 tasks + deadline escalation, so a re-run
+		// creates nothing new — matching the backend contract that `results` only
+		// reports newly-created tasks/escalations.
 		const result = runRules('REV-2026-0119');
-
-		expect(result).toMatchObject({
-			case_reference: 'REV-2026-0119',
-			risk_level: 'critical',
-			rules_evaluated: 7,
-		});
 
 		if (typeof result === 'string') {
 			throw new Error('Expected runRules response object');
 		}
 
-		expect(result.tasks).toEqual(
-			expect.arrayContaining([
-				{
-					rule_id: 'R-DOC-TRANSPORT',
-					title: 'Missing transport document',
-					severity: 'critical',
-				},
-				{
-					rule_id: 'R-DOC-PACKING',
-					title: 'Missing packing list',
-					severity: 'high',
-				},
-				{
-					rule_id: 'R-WOOD-ISPM15',
-					title: 'Wood packaging — ISPM-15 certification',
-					severity: 'high',
-				},
-			]),
-		);
+		expect(result.risk_level).toBe('critical');
 
-		expect(result.escalations).toEqual([
-			{
-				rule_id: 'R-DEADLINE-48H',
-				severity: 'high',
-				reason: 'Review deadline within 48 hours',
-			},
-		]);
+		expect(result.results).toEqual([]);
 
 		const caseItem = findCaseByReference('REV-2026-0119');
 
@@ -387,9 +360,46 @@ describe('runRules', () => {
 			throw new Error('Expected runRules response object');
 		}
 
-		expect(result.tasks).toBeGreaterThanOrEqual(3);
-
 		expect(result.risk_level).toBe('critical');
+
+		const taskResults = result.results.filter((entry) => entry.task);
+
+		expect(taskResults).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					rule_id: 'R-DOC-TRANSPORT',
+					severity: 'critical',
+					suggested_action: 'Request transport document from partner',
+					escalation: null,
+					task: expect.objectContaining({
+						title: 'Missing transport document',
+						severity: 'critical',
+					}),
+				}),
+				expect.objectContaining({
+					rule_id: 'R-DOC-PACKING',
+					task: expect.objectContaining({ title: 'Missing packing list', severity: 'high' }),
+				}),
+				expect.objectContaining({
+					rule_id: 'R-WOOD-ISPM15',
+					task: expect.objectContaining({ severity: 'high' }),
+				}),
+			]),
+		);
+
+		expect(taskResults.length).toBeGreaterThanOrEqual(3);
+
+		const escalationResults = result.results.filter((entry) => entry.escalation);
+
+		expect(escalationResults).toEqual([
+			expect.objectContaining({
+				rule_id: 'R-DEADLINE-48H',
+				trigger_reason: 'Review deadline within 48 hours',
+				severity: 'high',
+				task: null,
+				escalation: expect.objectContaining({ type: 'deadline', severity: 'high' }),
+			}),
+		]);
 
 		const logs = getAuditLog('REV-2026-0999');
 
@@ -411,9 +421,10 @@ describe('runRules', () => {
 			throw new Error('Expected runRules response object');
 		}
 
-		expect(first.tasks).toHaveLength(3);
+		// Tasks already exist on the fixture, so neither run creates anything new.
+		expect(first.results).toEqual([]);
 
-		expect(second.tasks).toHaveLength(3);
+		expect(second.results).toEqual([]);
 
 		const logs = getAuditLog('REV-2026-0119');
 

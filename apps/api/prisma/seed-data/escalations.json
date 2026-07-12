@@ -13,9 +13,18 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DEADLINE-48H",
 			"version": 1,
-			"severity": "high",
-			"title": "Review deadline within 48 hours",
-			"suggestedAction": "Escalate to shift manager"
+			"enabled": true,
+			"reason": "review deadline is within 48 hours",
+			"when": {
+				"trigger": "deadline_approaching",
+				"params": { "hoursThreshold": 48 }
+			},
+			"escalation": {
+				"type": "deadline",
+				"severity": "high",
+				"reason": "Review deadline within 48 hours",
+				"suggestedAction": "Escalate to shift manager"
+			}
 		},
 		"createdAt": "2026-07-06T12:00:00.000Z",
 		"updatedAt": "2026-07-06T12:00:00.000Z"
@@ -34,9 +43,18 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DEADLINE-48H",
 			"version": 1,
-			"severity": "high",
-			"title": "Review deadline within 48 hours",
-			"suggestedAction": "Escalate to shift manager"
+			"enabled": true,
+			"reason": "review deadline is within 48 hours",
+			"when": {
+				"trigger": "deadline_approaching",
+				"params": { "hoursThreshold": 48 }
+			},
+			"escalation": {
+				"type": "deadline",
+				"severity": "high",
+				"reason": "Review deadline within 48 hours",
+				"suggestedAction": "Escalate to shift manager"
+			}
 		},
 		"createdAt": "2026-06-23T08:00:00.000Z",
 		"updatedAt": "2026-06-24T09:00:00.000Z"
@@ -55,9 +73,18 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DEADLINE-PASSED",
 			"version": 1,
-			"severity": "critical",
-			"title": "Review deadline passed",
-			"suggestedAction": "Immediate manager escalation"
+			"enabled": true,
+			"reason": "review deadline has passed",
+			"when": {
+				"trigger": "deadline_passed",
+				"params": {}
+			},
+			"escalation": {
+				"type": "deadline",
+				"severity": "critical",
+				"reason": "Review deadline passed",
+				"suggestedAction": "Immediate manager escalation"
+			}
 		},
 		"createdAt": "2026-06-24T09:00:00.000Z",
 		"updatedAt": "2026-06-24T09:00:00.000Z"
@@ -76,9 +103,18 @@
 		"ruleSnapshot": {
 			"ruleId": "R-DEADLINE-48H",
 			"version": 1,
-			"severity": "high",
-			"title": "Review deadline within 48 hours",
-			"suggestedAction": "Escalate to shift manager"
+			"enabled": true,
+			"reason": "review deadline is within 48 hours",
+			"when": {
+				"trigger": "deadline_approaching",
+				"params": { "hoursThreshold": 48 }
+			},
+			"escalation": {
+				"type": "deadline",
+				"severity": "high",
+				"reason": "Review deadline within 48 hours",
+				"suggestedAction": "Escalate to shift manager"
+			}
 		},
 		"createdAt": "2026-06-30T08:00:00.000Z",
 		"updatedAt": "2026-06-27T10:00:00.000Z"
